@@ -1,0 +1,87 @@
+"use client";
+
+import Image from "next/image";
+import { TextEffect } from "../ui/text-effect";
+import { Button } from "../ui/button";
+import { motion, useInView } from "framer-motion";
+import { GlowEffect } from "../ui/glow-effect";
+import { useRef } from "react";
+import { BuyButton } from "../buy-button";
+
+const CTA = () => {
+  const buttonRef = useRef(null);
+  const isInView = useInView(buttonRef, { once: true, amount: 0.5 });
+
+  return (
+    <div className="py-16 pb-0">
+      <div className="flex flex-col w-full max-w-7xl mx-auto h-96 relative rounded-3xl overflow-hidden ring ring-white/2 shadow-2xl p-25 py-25 items-center justify-center gap-8">
+        <GlowEffect
+          colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
+          mode="breathe"
+          blur="strongest"
+          duration={3}
+          scale={1.1}
+        />
+        <div className="absolute inset-0 bg-black/35 rounded-3xl z-18" />
+
+        <Image
+          src="/bg.png"
+          alt="CTA Background"
+          fill
+          className="object-cover absolute z-10 w-full h-full"
+        />
+
+        <div className="relative flex flex-col items-center justify-center gap-8 z-20">
+          <div className="flex flex-col justify-center items-center h-max gap-2">
+            <TextEffect
+              preset="fade-in-blur"
+              speedReveal={1.1}
+              speedSegment={0.3}
+              as="h1"
+              className="text-5xl font-medium tracking-[-0.1rem] text-center"
+              segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
+            >
+              Make the decision today.
+            </TextEffect>
+
+            <TextEffect
+              preset="fade-in-blur"
+              speedReveal={1.1}
+              speedSegment={0.3}
+              as="h1"
+              className="text-5xl font-medium tracking-[-0.1rem] text-center"
+              segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
+            >
+              Your future self will thank you.
+            </TextEffect>
+          </div>
+
+          <div className="flex gap-2 relative z-11" ref={buttonRef}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              transition={{ duration: 1.5, delay: 1 }}
+            >
+              <Button
+                className="relative text-[14px] rounded-[12px]"
+                variant="discord"
+              >
+                Free discord access
+              </Button>
+            </motion.div>
+
+            <BuyButton
+              initial={{ opacity: 0, y: 10 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              transition={{ duration: 1.5, delay: 1 }}
+            >
+              Join Tom's Trading Room
+            </BuyButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CTA;
