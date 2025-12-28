@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin/api routes
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://yourdomain.com/sitemap.xml
