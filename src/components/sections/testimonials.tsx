@@ -56,7 +56,7 @@ const Testimonials = () => {
 
   // Use different multipliers for mobile vs desktop
   // Significantly reduce parallax on mobile for smooth performance
-  const mobileMultiplier = 0.3;
+  const mobileMultiplier = 0.1;
   const desktopMultiplier = 1;
   const multiplier = isMobile ? mobileMultiplier : desktopMultiplier;
 
@@ -64,17 +64,17 @@ const Testimonials = () => {
   const y2 = useTransform(
     scrollYProgress,
     [0, 1],
-    [0, height * 3.3 * multiplier],
+    [0, height * 3.3 * multiplier]
   );
   const y3 = useTransform(
     scrollYProgress,
     [0, 1],
-    [0, height * 3 * multiplier],
+    [0, height * 3 * multiplier]
   );
   const y4 = useTransform(
     scrollYProgress,
     [0, 1],
-    [0, height * 2.5 * multiplier],
+    [0, height * 2.5 * multiplier]
   );
 
   return (
