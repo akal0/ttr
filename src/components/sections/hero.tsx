@@ -11,7 +11,7 @@ import Image from "next/image";
 import { TextEffect } from "../ui/text-effect";
 import { motion } from "framer-motion";
 import { BuyButton } from "../buy-button";
-import Lenis from "lenis";
+import { useLenis } from "@/lib/lenis-context";
 
 const Hero = () => {
   const [isPaused, setIsPaused] = useState<boolean>(true);
@@ -21,12 +21,7 @@ const Hero = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<Lenis | null>(null);
-
-  useEffect(() => {
-    // Get the Lenis instance from window or create a new one
-    lenisRef.current = (window as any).lenis || null;
-  }, []);
+  const { scrollTo } = useLenis();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -130,7 +125,7 @@ const Hero = () => {
             href="#home"
             onClick={(e) => {
               e.preventDefault();
-              lenisRef.current?.scrollTo("#home", { duration: 1.5 });
+              scrollTo("#home", { duration: 1.5 });
             }}
             className="hover:text-blue-300 transition-colors"
           >
@@ -140,7 +135,7 @@ const Hero = () => {
             href="#testimonials"
             onClick={(e) => {
               e.preventDefault();
-              lenisRef.current?.scrollTo("#testimonials", { duration: 1.5 });
+              scrollTo("#testimonials", { duration: 1.5 });
             }}
             className="hover:text-blue-300 transition-colors"
           >
@@ -150,7 +145,7 @@ const Hero = () => {
             href="#about"
             onClick={(e) => {
               e.preventDefault();
-              lenisRef.current?.scrollTo("#about", { duration: 1.5 });
+              scrollTo("#about", { duration: 1.5 });
             }}
             className="hover:text-blue-300 transition-colors"
           >
@@ -160,7 +155,7 @@ const Hero = () => {
             href="#payouts"
             onClick={(e) => {
               e.preventDefault();
-              lenisRef.current?.scrollTo("#payouts", { duration: 1.5 });
+              scrollTo("#payouts", { duration: 1.5 });
             }}
             className="hover:text-blue-300 transition-colors"
           >
@@ -170,7 +165,7 @@ const Hero = () => {
             href="#faqs"
             onClick={(e) => {
               e.preventDefault();
-              lenisRef.current?.scrollTo("#faqs", { duration: 1.5 });
+              scrollTo("#faqs", { duration: 1.5 });
             }}
             className="hover:text-blue-300 transition-colors"
           >
