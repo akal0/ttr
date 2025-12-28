@@ -31,24 +31,16 @@ export const metadata: Metadata = {
   creator: "Tom's Trading Room",
   publisher: "Tom's Trading Room",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001",
   ),
   openGraph: {
     type: "website",
-    locale: "en_GB",
+    locale: "en_US",
     url: "/",
     title: "Tom's Trading Room - Master Prop Firm Trading",
     description:
       "Join hundreds of traders who've passed prop firm challenges and secured six-figure funding. Learn the exact frameworks that work.",
     siteName: "Tom's Trading Room",
-    images: [
-      {
-        url: "/og-poster.png",
-        width: 2552,
-        height: 1436,
-        alt: "Tom's Trading Room - Prop Firm Trading Education",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
