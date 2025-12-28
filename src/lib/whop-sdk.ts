@@ -21,7 +21,8 @@ export async function getUserEmail(userId: string): Promise<string | null> {
 
     console.log(`🔍 Full user object from API:`, JSON.stringify(user, null, 2));
 
-    const email = user.email || null;
+    // Type assertion since SDK types may not be complete
+    const email = (user as any).email || null;
     console.log(`✅ Retrieved user email: ${email || "not found"}`);
 
     return email;
