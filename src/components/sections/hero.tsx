@@ -11,6 +11,7 @@ import Image from "next/image";
 import { TextEffect } from "../ui/text-effect";
 import { motion } from "framer-motion";
 import { BuyButton } from "../buy-button";
+import Lenis from "lenis";
 
 const Hero = () => {
   const [isPaused, setIsPaused] = useState<boolean>(true);
@@ -20,6 +21,12 @@ const Hero = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    // Get the Lenis instance from window or create a new one
+    lenisRef.current = (window as any).lenis || null;
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -95,7 +102,10 @@ const Hero = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full relative bg-transparent">
+    <div
+      id="home"
+      className="flex flex-col h-full w-full relative bg-transparent"
+    >
       <GlowEffect
         colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
         mode="breathe"
@@ -112,28 +122,73 @@ const Hero = () => {
         alt="heroBackground"
       />
 
-      <div className="flex justify-between items-center py-8 max-w-7xl mx-auto w-full">
+      <div className="flex justify-center md:justify-between items-center py-8 md:max-w-7xl mx-auto w-full">
         <h1 className="text-2xl font-bold tracking-[-0.15rem]"> TTR </h1>
 
-        <div className="flex gap-6 text-sm tracking-tight">
-          <Link href="/"> Home </Link>
-          <Link href="/"> Testimonials </Link>
-          <Link href="/"> About us </Link>
-          <Link href="/"> Payouts </Link>
-          <Link href="/"> FAQs </Link>
-        </div>
+        <nav className="gap-6 text-sm tracking-tight relative z-10 hidden md:flex">
+          <Link
+            href="#home"
+            onClick={(e) => {
+              e.preventDefault();
+              lenisRef.current?.scrollTo("#home", { duration: 1.5 });
+            }}
+            className="hover:text-blue-300 transition-colors"
+          >
+            Home
+          </Link>
+          <Link
+            href="#testimonials"
+            onClick={(e) => {
+              e.preventDefault();
+              lenisRef.current?.scrollTo("#testimonials", { duration: 1.5 });
+            }}
+            className="hover:text-blue-300 transition-colors"
+          >
+            Testimonials
+          </Link>
+          <Link
+            href="#about"
+            onClick={(e) => {
+              e.preventDefault();
+              lenisRef.current?.scrollTo("#about", { duration: 1.5 });
+            }}
+            className="hover:text-blue-300 transition-colors"
+          >
+            About us
+          </Link>
+          <Link
+            href="#payouts"
+            onClick={(e) => {
+              e.preventDefault();
+              lenisRef.current?.scrollTo("#payouts", { duration: 1.5 });
+            }}
+            className="hover:text-blue-300 transition-colors"
+          >
+            Payouts
+          </Link>
+          <Link
+            href="#faqs"
+            onClick={(e) => {
+              e.preventDefault();
+              lenisRef.current?.scrollTo("#faqs", { duration: 1.5 });
+            }}
+            className="hover:text-blue-300 transition-colors"
+          >
+            FAQs
+          </Link>
+        </nav>
       </div>
 
-      <div className="flex flex-col gap-8 items-center justify-center h-full mt-20 max-w-7xl mx-auto ">
+      <div className="flex flex-col gap-8 items-center justify-center h-full mt-4 md:mt-20 px-8 md:px-0 md:max-w-7xl mx-auto ">
         {/* Hero content */}
         <div className="flex flex-col gap-8 items-center justify-center h-full">
-          <div className="flex flex-col gap-8 items-center justify-center">
+          <div className="flex flex-col gap-4 md:gap-8 items-center justify-center">
             <TextEffect
               preset="fade-in-blur"
               speedReveal={1.1}
               speedSegment={0.3}
               as="h1"
-              className="text-6xl font-medium tracking-[-0.12rem] text-center leading-17"
+              className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-17"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
               Master prop firm trading and build six-figure accounts in 6 months
@@ -196,8 +251,12 @@ const Hero = () => {
             className="w-full cursor-pointer"
             ref={videoRef}
             onClick={togglePlayPause}
+            poster="/video-poster.png"
+            preload="metadata"
+            playsInline
           >
             <source src="/video.mp4" />
+            <track kind="captions" />
           </video>
         </div>
       </div>

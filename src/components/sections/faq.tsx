@@ -171,7 +171,7 @@ const FAQ = () => {
     setOpenIndexes((prev) => {
       const newArr = [...prev];
       newArr[i] = !newArr[i];
-      
+
       // Track FAQ interaction
       if (!prev[i]) {
         trackEvent("faq_opened", {
@@ -179,7 +179,7 @@ const FAQ = () => {
           questionIndex: i,
         });
       }
-      
+
       return newArr;
     });
   };
@@ -187,7 +187,7 @@ const FAQ = () => {
   return (
     <div
       id="faqs"
-      className="min-h-screen h-full flex flex-col gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto"
+      className="min-h-screen h-full flex flex-col gap-8 md:gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto px-8"
     >
       <div className="w-full md:w-[16rem] h-full">
         <div className="space-y-4 md:space-y-6 md:sticky md:top-4">

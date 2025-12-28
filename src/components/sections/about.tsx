@@ -11,14 +11,17 @@ import { Tilt } from "../ui/tilt";
 
 const About = () => {
   return (
-    <div className="flex flex-col h-full w-full max-w-7xl mx-auto py-16 gap-12">
-      <div className="flex flex-col gap-2 items-center justify-center">
+    <div
+      id="about"
+      className="flex flex-col h-full w-full max-w-7xl mx-auto py-16 gap-12 px-4 md:px-0"
+    >
+      <div className="flex flex-col gap-4 md:gap-2 items-center justify-center">
         <TextEffect
           preset="fade-in-blur"
           speedReveal={1.1}
           speedSegment={0.3}
           as="h1"
-          className="text-5xl font-medium tracking-[-0.1rem] text-center leading-17"
+          className="text-4xl md:text-5xl font-medium md:tracking-[-0.1rem] text-center md:leading-17"
           segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
         >
           So, what exactly is Tom's Trading Room?
@@ -28,7 +31,7 @@ const About = () => {
           per="char"
           speedReveal={3.5}
           speedSegment={0.3}
-          className="text-center text-lg text-white/65 max-w-3xl mx-auto leading-7"
+          className="text-center text-sm md:text-lg text-white/65 max-w-3xl mx-auto md:leading-7"
           preset="fade-in-blur"
         >
           Tom's Trading Room is a structured mentorship helping traders pass
@@ -38,7 +41,7 @@ const About = () => {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-2 h-full">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-2 h-full">
           <div className="w-full col-span-2 h-full">
             <AreaChartBento />
           </div>
@@ -48,7 +51,7 @@ const About = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 h-max">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-2 h-max">
           <div className="w-full h-full">
             <EquitySmoothnessChart />
           </div>

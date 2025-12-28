@@ -23,8 +23,8 @@ const CTA = () => {
   }, [isInView]);
 
   return (
-    <div className="py-16 pb-0">
-      <div className="flex flex-col w-full max-w-7xl mx-auto h-96 relative rounded-3xl overflow-hidden ring ring-white/2 shadow-2xl p-25 py-25 items-center justify-center gap-8">
+    <div className="py-16 pb-0 px-4">
+      <div className="flex flex-col w-full max-w-7xl mx-auto h-96 relative rounded-3xl overflow-hidden ring ring-white/2 shadow-2xl md:p-25 py-25 items-center justify-center gap-8">
         <GlowEffect
           colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
           mode="breathe"
@@ -42,13 +42,13 @@ const CTA = () => {
         />
 
         <div className="relative flex flex-col items-center justify-center gap-8 z-20">
-          <div className="flex flex-col justify-center items-center h-max gap-2">
+          <div className="flex flex-col justify-center items-center h-max md:gap-2">
             <TextEffect
               preset="fade-in-blur"
               speedReveal={1.1}
               speedSegment={0.3}
               as="h1"
-              className="text-5xl font-medium tracking-[-0.1rem] text-center"
+              className="text-2xl md:text-5xl font-medium tracking-tight md:tracking-[-0.1rem] text-center"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
               Make the decision today.
@@ -59,21 +59,24 @@ const CTA = () => {
               speedReveal={1.1}
               speedSegment={0.3}
               as="h1"
-              className="text-5xl font-medium tracking-[-0.1rem] text-center"
+              className="text-2xl md:text-5xl font-medium tracking-tight md:tracking-[-0.1rem] text-center"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
               Your future self will thank you.
             </TextEffect>
           </div>
 
-          <div className="flex gap-2 relative z-11" ref={buttonRef}>
+          <div
+            className="flex flex-col md:flex-row gap-2 relative z-11"
+            ref={buttonRef}
+          >
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
               transition={{ duration: 1.5, delay: 1 }}
             >
               <Button
-                className="relative text-[14px] rounded-[12px]"
+                className="relative text-[14px] rounded-[12px] w-full"
                 variant="discord"
                 onClick={() => {
                   trackEvent("discord_clicked", {

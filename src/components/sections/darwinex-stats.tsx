@@ -160,7 +160,7 @@ const DarwinexStats = () => {
     >
       <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex items-center justify-between p-8 pb-1">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between p-8 pb-1">
           <TextEffect
             preset="fade-in-blur"
             speedReveal={1.1}
@@ -183,7 +183,7 @@ const DarwinexStats = () => {
         </div>
 
         {/* Main Stats Grid */}
-        <div className="grid grid-cols-3 gap-4 px-8">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-4 px-8">
           {/* Return Since Inception */}
           <div className="flex flex-col gap-1 p-4 rounded-xl border border-sky-200/5 bg-sky-100/1">
             <span className="text-sm text-white font-medium">
@@ -313,17 +313,17 @@ const DarwinexStats = () => {
         <Separator className="bg-sky-200/5" />
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-5 gap-4 px-8 h-full justify-items-stretch pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 px-8 h-full justify-items-stretch pb-6">
           <div className="flex flex-col gap-1 h-full justify-between">
             <span className="text-xs text-white font-medium">
               Number of trades
             </span>
-            <span className="text-xl font-semibold text-white">
+            <span className="md:text-xl font-semibold text-white">
               {displayStats.numberOfTrades !== null ? (
                 <AnimatedNumber
                   value={displayStats.numberOfTrades}
                   springOptions={{ stiffness: 50, damping: 20 }}
-                  className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                  className="text-lg md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                 />
               ) : (
                 "N/A"
@@ -335,19 +335,19 @@ const DarwinexStats = () => {
             <span className="text-xs text-white font-medium">
               Average trade duration
             </span>
-            <span className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tight">
+            <span className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tight">
               {avgDurationHours > 0 || avgDurationMinutes > 0 ? (
                 <>
                   <AnimatedNumber
                     value={displayDurationHours}
                     springOptions={{ stiffness: 50, damping: 20 }}
-                    className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                    className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                   />{" "}
                   hours{" "}
                   <AnimatedNumber
                     value={displayDurationMinutes}
                     springOptions={{ stiffness: 50, damping: 20 }}
-                    className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                    className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                   />{" "}
                   minutes
                 </>
@@ -361,14 +361,14 @@ const DarwinexStats = () => {
             <span className="text-xs text-white font-medium">
               Assets under management
             </span>
-            <span className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter">
+            <span className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter">
               {displayStats.aum !== null ? (
                 <>
                   $
                   <AnimatedNumber
                     value={displayStats.aum}
                     springOptions={{ stiffness: 50, damping: 20 }}
-                    className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                    className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                   />
                 </>
               ) : (
@@ -379,13 +379,13 @@ const DarwinexStats = () => {
 
           <div className="flex flex-col gap-1 h-full justify-between">
             <span className="text-xs text-white font-medium">Win rate</span>
-            <span className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter">
+            <span className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter">
               {displayStats.winningTradesRatio !== null ? (
                 <>
                   <AnimatedNumber
                     value={displayStats.winningTradesRatio}
                     springOptions={{ stiffness: 50, damping: 20 }}
-                    className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                    className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                   />
                   %
                 </>
@@ -397,12 +397,12 @@ const DarwinexStats = () => {
 
           <div className="flex flex-col gap-1 h-full justify-between">
             <span className="text-xs text-white font-medium">Investors</span>
-            <span className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300">
+            <span className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300">
               {displayStats.currentInvestors !== null ? (
                 <AnimatedNumber
                   value={displayStats.currentInvestors}
                   springOptions={{ stiffness: 50, damping: 20 }}
-                  className="text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
+                  className="md:text-xl font-medium bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300 tracking-tighter"
                 />
               ) : (
                 "N/A"

@@ -50,14 +50,17 @@ const Testimonials = () => {
   const y5 = useTransform(scrollYProgress, [0, 1], [0, height * 2.5]);
 
   return (
-    <div className="w-full flex items-center flex-col gap-8 bg-transparent">
-      <div className="py-12 space-y-2">
+    <div
+      className="w-full flex items-center flex-col gap-8 bg-transparent"
+      id="testimonials"
+    >
+      <div className="py-6 md:py-12 md:space-y-2">
         <TextEffect
           preset="fade-in-blur"
           speedReveal={1.1}
           speedSegment={0.3}
           as="h1"
-          className="text-5xl font-medium tracking-[-0.1rem] text-center leading-13 max-w-2xl"
+          className="text-xl md:text-5xl font-medium md:tracking-[-0.1rem] text-center md:leading-13 max-w-2xl"
           segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
         >
           Don't just take my word for it.
@@ -69,7 +72,7 @@ const Testimonials = () => {
           speedSegment={0.3}
           delay={0.75}
           as="h1"
-          className="text-5xl font-medium tracking-[-0.1rem] text-center leading-13 max-w-3xl"
+          className="text-xl md:text-5xl font-medium md:tracking-[-0.1rem] text-center md:leading-13 max-w-3xl"
           segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
         >
           Take a look at our members' results.
