@@ -1,6 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
-import { motion, Transition } from "motion/react";
+import type { TargetAndTransition, Transition } from "motion/react";
+import { motion } from "motion/react";
 
 export type GlowEffectProps = {
   className?: string;
@@ -43,7 +44,7 @@ export function GlowEffect({
     ease: "linear" as const,
   };
 
-  const animations = {
+  const animations: Record<string, TargetAndTransition> = {
     rotate: {
       background: [
         `conic-gradient(from 0deg at 50% 50%, ${colors.join(", ")})`,
@@ -51,7 +52,7 @@ export function GlowEffect({
       ],
       transition: {
         ...(transition ?? BASE_TRANSITION),
-      },
+      } as Transition,
     },
     pulse: {
       background: colors.map(
@@ -139,7 +140,7 @@ export function GlowEffect({
           backfaceVisibility: "hidden",
         } as React.CSSProperties
       }
-      animate={animations[mode]}
+      animate={animations[mode] as any}
       className={cn(
         "pointer-events-none absolute inset-0 h-full w-full",
         "scale-[var(--scale)] transform-gpu",
