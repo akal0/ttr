@@ -47,7 +47,12 @@ const Lifetime = () => {
 
       <div className="flex flex-col md:grid md:grid-cols-3 gap-4 items-center">
         <div className="rounded-3xl overflow-hidden relative h-103 w-full">
-          <Image src="/payouts/ftmo.jpeg" alt="lifetimeFTMO" fill />
+          <Image
+            src="/payouts/ftmo.jpeg"
+            alt="lifetimeFTMO"
+            fill
+            className="object-cover"
+          />
         </div>
 
         <div className="rounded-3xl overflow-hidden relative h-120 md:h-144 w-full">
@@ -60,7 +65,12 @@ const Lifetime = () => {
         </div>
 
         <div className="rounded-3xl overflow-hidden relative w-full h-103">
-          <Image src="/payouts/e8.jpeg" alt="lifetimeE8" fill />
+          <Image
+            src="/payouts/e8.jpeg"
+            alt="lifetimeE8"
+            fill
+            className="object-cover"
+          />
         </div>
       </div>
 
