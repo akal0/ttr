@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 import { useTransform, useScroll, MotionValue, motion } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import useDimension from "@/lib/hooks/use-dimension";
 import AvatarStack from "../avatar-stack";
 import { TextEffect } from "../ui/text-effect";
@@ -35,19 +35,47 @@ const testimonials = [
 
 const Testimonials = () => {
   const container = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const { height } = useDimension();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ["start end", "end start"],
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [0, height * 2]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, height * 3.3]);
-  const y3 = useTransform(scrollYProgress, [0, 1], [0, height * 3]);
-  const y4 = useTransform(scrollYProgress, [0, 1], [0, height * 2.5]);
-  const y5 = useTransform(scrollYProgress, [0, 1], [0, height * 2.5]);
+  // Use different multipliers for mobile vs desktop
+  // Significantly reduce parallax on mobile for smooth performance
+  const mobileMultiplier = 0.3;
+  const desktopMultiplier = 1;
+  const multiplier = isMobile ? mobileMultiplier : desktopMultiplier;
+
+  const y = useTransform(scrollYProgress, [0, 1], [0, height * 2 * multiplier]);
+  const y2 = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, height * 3.3 * multiplier],
+  );
+  const y3 = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, height * 3 * multiplier],
+  );
+  const y4 = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, height * 2.5 * multiplier],
+  );
 
   return (
     <div
@@ -80,7 +108,7 @@ const Testimonials = () => {
       </div>
 
       <div
-        className="h-[175vh] bg-[#01030b] flex gap-[0.5vw] p-[0.5vw] box-border overflow-hidden w-full"
+        className="h-[100vh] md:h-[175vh] bg-[#01030b] flex gap-[0.5vw] p-[0.5vw] box-border overflow-hidden w-full"
         ref={container}
       >
         <Column
@@ -92,6 +120,7 @@ const Testimonials = () => {
             testimonials[4],
           ]}
           y={y}
+          columnIndex={0}
         />
 
         <Column
@@ -103,6 +132,7 @@ const Testimonials = () => {
             testimonials[9],
           ]}
           y={y2}
+          columnIndex={1}
         />
 
         <Column
@@ -116,6 +146,7 @@ const Testimonials = () => {
             testimonials[0],
           ]}
           y={y3}
+          columnIndex={2}
         />
 
         <Column
@@ -129,6 +160,7 @@ const Testimonials = () => {
             testimonials[3],
           ]}
           y={y4}
+          columnIndex={3}
         />
       </div>
     </div>
@@ -138,26 +170,37 @@ const Testimonials = () => {
 const Column = ({
   testimonials,
   y,
+  columnIndex,
 }: {
   testimonials: string[];
   y: MotionValue<number>;
+  columnIndex: number;
 }) => {
+  // Responsive initial translate values
+  const translateClasses = [
+    "translate-y-[-25%] md:translate-y-[-45%]",
+    "translate-y-[-45%] md:translate-y-[-90%]",
+    "translate-y-[-40%] md:translate-y-[-75%]",
+    "translate-y-[-35%] md:translate-y-[-65%]",
+  ];
+
   return (
     <motion.div
       style={{ y }}
-      className="w-1/4 h-full flex flex-col gap-[0.5vw] min-w-[250px] first:translate-y-[-45%] nth-[2]:translate-y-[-90%] nth-[3]:translate-y-[-75%] last:translate-y-[-65%]"
+      className={`w-1/4 h-full flex flex-col gap-[0.5vw] min-w-[250px] will-change-transform transform-gpu ${translateClasses[columnIndex]}`}
     >
       {testimonials.map((src, index) => (
         <div
-          key={index}
+          key={`${src}-${index}`}
           className="w-full relative rounded-sm overflow-hidden shrink-0"
         >
           <Image
             src={src}
             width={500}
             height={500}
-            alt="image"
+            alt="testimonial"
             className="w-full h-auto object-contain"
+            loading="lazy"
           />
         </div>
       ))}

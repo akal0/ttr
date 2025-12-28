@@ -10,8 +10,18 @@ export function LenisProvider({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Initialize Lenis
-    const lenis = new Lenis();
+    // Detect if mobile device
+    const isMobile =
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      window.innerWidth < 768;
+
+    // Initialize Lenis with mobile-optimized settings
+    const lenis = new Lenis({
+      lerp: isMobile ? 0.05 : 0.1, // Faster lerp on mobile for less lag
+      smoothWheel: !isMobile, // Disable smooth wheel on mobile for native feel
+      touchMultiplier: 1, // Use native touch scrolling
+      infinite: false,
+    });
     lenisRef.current = lenis;
 
     // Make Lenis instance globally accessible for debugging
