@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { trackEvent } from "aurea-tracking-sdk";
 
 const faqs = [
   {
@@ -170,6 +171,15 @@ const FAQ = () => {
     setOpenIndexes((prev) => {
       const newArr = [...prev];
       newArr[i] = !newArr[i];
+      
+      // Track FAQ interaction
+      if (!prev[i]) {
+        trackEvent("faq_opened", {
+          question: faqs[i].title,
+          questionIndex: i,
+        });
+      }
+      
       return newArr;
     });
   };
@@ -193,6 +203,11 @@ const FAQ = () => {
             className="w-full flex justify-between py-6 md:py-6 px-4! md:pl-6! md:pr-4! rounded-xl bg-white/5 hover:bg-white/10 transition duration-250 tracking-tight text-sm md:text-base"
             asChild
             variant="gradient"
+            onClick={() => {
+              trackEvent("contact_clicked", {
+                source: "faq_section",
+              });
+            }}
           >
             <Link href="mailto:contact@tomstradingroom.com">
               Get in touch

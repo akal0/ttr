@@ -18,7 +18,7 @@ export function AnimatedNumber({
   as = 'span',
   decimals,
 }: AnimatedNumberProps) {
-  const MotionComponent = motion.create(as as keyof JSX.IntrinsicElements);
+  const MotionComponent = motion.create(as as any);
 
   const spring = useSpring(value, springOptions);
   const display = useTransform(spring, (current) =>

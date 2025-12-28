@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "ngrok:dev": "ngrok http --url=decoctive-debi-grayly.ngrok-free.dev 3001",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
@@ -22,6 +23,7 @@
     "@supabase/supabase-js": "^2.88.0",
     "@svgr/webpack": "^8.1.0",
     "@whop/sdk": "^0.0.20",
+    "aurea-tracking-sdk": "1.1.0",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

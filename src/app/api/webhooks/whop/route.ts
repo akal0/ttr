@@ -57,6 +57,58 @@ export async function POST(request: NextRequest) {
     return `${currency} ${(amount / 100).toFixed(2)}`;
   };
 
+  // Extract Aurea anonymous ID from checkout URL metadata (if available)
+  // Whop stores custom data in the checkout_session metadata
+  const aureaAnonymousId = data?.metadata?.aurea_id || data?.checkout_session?.metadata?.aurea_id;
+  
+  console.log(`🔗 Aurea tracking ID: ${aureaAnonymousId || 'not found'}`);
+
+  // Helper function to track events in Aurea
+  const trackAureaEvent = async (eventName: string, properties: Record<string, any>) => {
+    const userId = data?.user?.id;
+    if (!userId) return;
+
+    // Use the Aurea anonymous ID if available, otherwise fall back to Whop user ID
+    const anonymousIdToUse = aureaAnonymousId || userId;
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_AUREA_API_URL || 'http://localhost:3000/api'}/track/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
+          "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
+        },
+        body: JSON.stringify({
+          events: [{
+            eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            eventName,
+            properties: {
+              ...properties,
+              product: product || "TTR Membership",
+              username,
+              email,
+            },
+            context: {
+              user: {
+                userId: email || undefined, // Use email as userId for consistency
+                anonymousId: anonymousIdToUse, // Use the same anonymousId from client-side
+              },
+              session: {
+                sessionId: anonymousIdToUse, // Use same session ID
+              },
+            },
+            timestamp: Date.now(),
+          }],
+          batch: true,
+        }),
+      });
+      console.log(`✅ Tracked ${eventName} in Aurea with anonymousId: ${anonymousIdToUse}`);
+    } catch (error) {
+      console.error(`Failed to track ${eventName} in Aurea:`, error);
+    }
+  };
+
   // Route events to appropriate Discord channels
   if (type === "payment.succeeded") {
     const fields = [
@@ -83,12 +135,38 @@ export async function POST(request: NextRequest) {
     await sendDiscord(
       process.env.DISCORD_PAYMENTS_WEBHOOK_URL!,
       createEmbed({
-        title: "💰 Payment Succeeded",
+        title: "💰 Payment succeeded",
         description: "A new payment has been successfully processed!",
         color: "success",
         fields,
       })
     );
+
+    // Track conversion in Aurea
+    const revenueAmount = finalAmount || subtotal || 9900; // Fallback to $99 if no amount
+    await trackAureaEvent("purchase", {
+      conversionType: "purchase",
+      revenue: revenueAmount / 100, // Convert cents to dollars
+      currency: currency || "USD",
+      orderId: data?.id || "",
+    });
+
+    // Mark user as purchased so client-side can detect and redirect
+    if (aureaAnonymousId) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/check-purchase`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            anonymousId: aureaAnonymousId,
+            secret: process.env.PURCHASE_CHECK_SECRET || "dev-secret-123",
+          }),
+        });
+        console.log(`✅ Marked user ${aureaAnonymousId} for redirect to thank-you page`);
+      } catch (error) {
+        console.error("Failed to mark purchase for redirect:", error);
+      }
+    }
 
     // Capture email for mailing list
     if (email) {
@@ -127,6 +205,14 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // Track failed payment in Aurea
+    const attemptedAmount = finalAmount || subtotal || 9900;
+    await trackAureaEvent("payment_failed", {
+      attemptedRevenue: attemptedAmount / 100,
+      currency: currency || "USD",
+      failureReason: data?.failure_reason || "unknown",
+    });
+
     // Capture email - they attempted but failed
     if (email) {
       // Store the user's email in database
@@ -157,6 +243,14 @@ export async function POST(request: NextRequest) {
         ],
       })
     );
+
+    // Track pending payment in Aurea
+    const pendingAmount = finalAmount || subtotal || 9900;
+    await trackAureaEvent("payment_pending", {
+      pendingRevenue: pendingAmount / 100,
+      currency: currency || "USD",
+      paymentMethod: data?.payment_method || "unknown",
+    });
 
     // Capture email - payment started but not completed
     if (email) {
@@ -207,6 +301,11 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    // Track membership deactivation in Aurea
+    await trackAureaEvent("membership_deactivated", {
+      deactivationReason: data?.deactivation_reason || "unknown",
+    });
+
     // Membership events don't include email - get it from database
     const userId = data?.user?.id;
 
@@ -253,6 +352,14 @@ export async function POST(request: NextRequest) {
         ],
       })
     );
+
+    // Track refund in Aurea
+    await trackAureaEvent("payment_refunded", {
+      refundAmount: (refundAmount || 0) / 100,
+      currency: currency || "USD",
+      refundReason: data?.refund_reason || "unknown",
+      orderId: data?.id || "",
+    });
 
     // Keep email - they may come back
     if (email) {
@@ -363,6 +470,12 @@ export async function POST(request: NextRequest) {
         ],
       })
     );
+
+    // Track cancellation in Aurea
+    await trackAureaEvent("membership_cancelled", {
+      cancellationReason: cancelReason,
+      cancelledAt: new Date().toISOString(),
+    });
 
     // Membership events don't include email - get it from database
     const userId = data?.user?.id;

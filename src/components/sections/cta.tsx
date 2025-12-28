@@ -5,12 +5,22 @@ import { TextEffect } from "../ui/text-effect";
 import { Button } from "../ui/button";
 import { motion, useInView } from "framer-motion";
 import { GlowEffect } from "../ui/glow-effect";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { BuyButton } from "../buy-button";
+import { trackEvent } from "aurea-tracking-sdk";
 
 const CTA = () => {
   const buttonRef = useRef(null);
   const isInView = useInView(buttonRef, { once: true, amount: 0.5 });
+
+  // Track when CTA section comes into view
+  useEffect(() => {
+    if (isInView) {
+      trackEvent("cta_section_viewed", {
+        section: "final_cta",
+      });
+    }
+  }, [isInView]);
 
   return (
     <div className="py-16 pb-0">
@@ -65,6 +75,12 @@ const CTA = () => {
               <Button
                 className="relative text-[14px] rounded-[12px]"
                 variant="discord"
+                onClick={() => {
+                  trackEvent("discord_clicked", {
+                    source: "cta_section",
+                    button: "free_discord_access",
+                  });
+                }}
               >
                 Free discord access
               </Button>
