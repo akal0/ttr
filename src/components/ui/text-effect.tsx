@@ -7,7 +7,7 @@ import type {
   Variant,
   Variants,
 } from "motion/react";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 export type PresetType = "blur" | "fade-in-blur" | "scale" | "fade" | "slide";
 
@@ -73,32 +73,48 @@ const defaultItemVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-const presetVariants: Record<
-  PresetType,
-  { container: Variants; item: Variants }
-> = {
+// Check if mobile for performance optimization
+const getIsMobile = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    window.innerWidth < 768
+  );
+};
+
+const getPresetVariants = (
+  isMobile: boolean,
+): Record<PresetType, { container: Variants; item: Variants }> => ({
   blur: {
     container: defaultContainerVariants,
     item: {
-      hidden: { opacity: 0, filter: "blur(12px)" },
+      hidden: { opacity: 0, filter: isMobile ? "blur(4px)" : "blur(12px)" },
       visible: { opacity: 1, filter: "blur(0px)" },
-      exit: { opacity: 0, filter: "blur(12px)" },
+      exit: { opacity: 0, filter: isMobile ? "blur(4px)" : "blur(12px)" },
     },
   },
   "fade-in-blur": {
     container: defaultContainerVariants,
     item: {
-      hidden: { opacity: 0, y: 20, filter: "blur(12px)" },
+      hidden: {
+        opacity: 0,
+        y: isMobile ? 10 : 20,
+        filter: isMobile ? "blur(4px)" : "blur(12px)",
+      },
       visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-      exit: { opacity: 0, y: 20, filter: "blur(12px)" },
+      exit: {
+        opacity: 0,
+        y: isMobile ? 10 : 20,
+        filter: isMobile ? "blur(4px)" : "blur(12px)",
+      },
     },
   },
   scale: {
     container: defaultContainerVariants,
     item: {
-      hidden: { opacity: 0, scale: 0 },
+      hidden: { opacity: 0, scale: isMobile ? 0.9 : 0 },
       visible: { opacity: 1, scale: 1 },
-      exit: { opacity: 0, scale: 0 },
+      exit: { opacity: 0, scale: isMobile ? 0.9 : 0 },
     },
   },
   fade: {
@@ -112,12 +128,12 @@ const presetVariants: Record<
   slide: {
     container: defaultContainerVariants,
     item: {
-      hidden: { opacity: 0, y: 20 },
+      hidden: { opacity: 0, y: isMobile ? 10 : 20 },
       visible: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: 20 },
+      exit: { opacity: 0, y: isMobile ? 10 : 20 },
     },
   },
-};
+});
 
 const AnimationComponent: React.FC<{
   segment: string;
@@ -139,7 +155,7 @@ const AnimationComponent: React.FC<{
       per === "line" ? (
         <motion.span
           variants={variants}
-          className={cn("block", segmentClassName)}
+          className={cn("block will-change-transform", segmentClassName)}
           style={inheritedStyle}
         >
           {segment}
@@ -148,7 +164,10 @@ const AnimationComponent: React.FC<{
         <motion.span
           aria-hidden="true"
           variants={variants}
-          className={cn("inline-block whitespace-pre", segmentClassName)}
+          className={cn(
+            "inline-block whitespace-pre will-change-transform",
+            segmentClassName,
+          )}
           style={inheritedStyle}
         >
           {segment}
@@ -160,7 +179,10 @@ const AnimationComponent: React.FC<{
               key={`char-${charIndex}`}
               aria-hidden="true"
               variants={variants}
-              className={cn("inline-block whitespace-pre", segmentClassName)}
+              className={cn(
+                "inline-block whitespace-pre will-change-transform",
+                segmentClassName,
+              )}
               style={inheritedStyle}
             >
               {char}
@@ -180,7 +202,7 @@ const AnimationComponent: React.FC<{
         {content}
       </span>
     );
-  }
+  },
 );
 
 AnimationComponent.displayName = "AnimationComponent";
@@ -191,7 +213,7 @@ const splitText = (text: string, per: PerType) => {
 };
 
 const hasTransition = (
-  variant?: Variant
+  variant?: Variant,
 ): variant is TargetAndTransition & { transition?: Transition } => {
   if (!variant) return false;
   return typeof variant === "object" && "transition" in variant;
@@ -199,7 +221,7 @@ const hasTransition = (
 
 const createVariantsWithTransition = (
   baseVariants: Variants,
-  transition?: Transition & { exit?: Transition }
+  transition?: Transition & { exit?: Transition },
 ): Variants => {
   if (!transition) return baseVariants;
 
@@ -250,6 +272,19 @@ export function TextEffect({
   inView = true,
   inViewOptions = { once: true, margin: "0px", amount: "some" },
 }: TextEffectProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(getIsMobile());
+
+    const handleResize = () => {
+      setIsMobile(getIsMobile());
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const segments = splitText(children, per);
   const MotionTag = motion[as as keyof typeof motion] as typeof motion.div;
   const ref = useRef(null);
@@ -258,6 +293,7 @@ export function TextEffect({
   // Determine whether to show the animation based on trigger and inView settings
   const shouldAnimate = inView ? isInView && trigger : trigger;
 
+  const presetVariants = getPresetVariants(isMobile);
   const baseVariants = preset
     ? presetVariants[preset]
     : { container: defaultContainerVariants, item: defaultItemVariants };
@@ -287,7 +323,7 @@ export function TextEffect({
           staggerChildren: customStagger ?? stagger,
           staggerDirection: -1,
         },
-      }
+      },
     ),
     item: createVariantsWithTransition(variants?.item || baseVariants.item, {
       duration: baseDuration,

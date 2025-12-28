@@ -186,7 +186,8 @@ const Hero = () => {
               className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-17"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
-              Master prop firm trading and build six-figure accounts in 6 months
+              Master prop firm trading and build six-figure accounts in a couple
+              months
             </TextEffect>
 
             <div className="flex flex-col gap-3">
