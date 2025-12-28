@@ -1,9 +1,10 @@
 /**
  * Darwinex Stats Scraper
- * Scrapes trading statistics from Darwinex invest pages using Puppeteer
+ * Scrapes trading statistics from Darwinex invest pages using Cheerio
+ * (Serverless-compatible - no Puppeteer needed)
  */
 
-import puppeteer from 'puppeteer';
+import * as cheerio from "cheerio";
 
 export interface DarwinexStats {
   returnSinceInception: number | null;
@@ -21,141 +22,134 @@ export interface DarwinexStats {
 }
 
 /**
- * Scrapes statistics from a Darwinex invest page using Puppeteer
+ * Scrapes statistics from a Darwinex invest page using Cheerio
  * @param darwinCode - The DARWIN code (e.g., "WLE")
  * @returns Promise with the scraped statistics
  */
 export async function scrapeDarwinexStats(
-  darwinCode: string
+  darwinCode: string,
 ): Promise<DarwinexStats> {
   const url = `https://www.darwinex.com/invest/${darwinCode}`;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu',
-    ],
-  });
-
   try {
-    const page = await browser.newPage();
-
-    // Set a realistic viewport
-    await page.setViewport({ width: 1920, height: 1080 });
-
-    // Set user agent
-    await page.setUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    );
-
-    // Navigate to the page
-    await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
+    // Fetch the HTML
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+      },
     });
 
-    // Wait for specific elements to ensure page is loaded
-    try {
-      await page.waitForSelector('.js-return-total, .js-return-annualized', {
-        timeout: 10000,
-      });
-    } catch (e) {
-      console.log('Stats elements not found, trying anyway...');
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch page: ${response.status} ${response.statusText}`,
+      );
     }
 
-    // Wait a bit for any animations/dynamic content
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-    // Extract stats using page.evaluate
-    const stats = await page.evaluate(() => {
-      const parseNumber = (value: string | null | undefined): number | null => {
-        if (!value) return null;
-        const cleaned = value.replace(/[,%\s]/g, '');
-        const num = parseFloat(cleaned);
-        return isNaN(num) ? null : num;
-      };
+    // Helper function to parse numbers
+    const parseNumber = (value: string | null | undefined): number | null => {
+      if (!value) return null;
+      const cleaned = value.replace(/[,%\s]/g, "");
+      const num = parseFloat(cleaned);
+      return Number.isNaN(num) ? null : num;
+    };
 
-      const getDataIncValue = (selector: string): number | null => {
-        const el = document.querySelector(selector);
-        if (!el) return null;
-        const value = el.getAttribute('data-inc-value');
-        return parseNumber(value);
-      };
+    // Helper to get data-inc-value attribute
+    const getDataIncValue = (selector: string): number | null => {
+      const el = $(selector);
+      if (!el.length) return null;
+      const value = el.attr("data-inc-value");
+      return parseNumber(value);
+    };
 
-      const getTextAfterLabel = (labelText: string): string | null => {
-        const elements = Array.from(document.querySelectorAll('p'));
-        for (let i = 0; i < elements.length; i++) {
-          if (elements[i].textContent?.includes(labelText)) {
-            const nextP = elements[i].nextElementSibling;
-            if (nextP && nextP.tagName === 'P') {
-              return nextP.textContent?.trim() || null;
-            }
+    // Helper to get text after a label
+    const getTextAfterLabel = (labelText: string): string | null => {
+      const paragraphs = $("p");
+      for (let i = 0; i < paragraphs.length; i++) {
+        const p = paragraphs.eq(i);
+        if (p.text().includes(labelText)) {
+          const nextP = p.next("p");
+          if (nextP.length) {
+            return nextP.text().trim() || null;
           }
         }
-        return null;
-      };
+      }
+      return null;
+    };
 
-      return {
-        returnSinceInception: getDataIncValue('.js-return-total'),
-        annualizedReturn: getDataIncValue('.js-return-annualized') ?? (() => {
-          // Fallback: try to get from text content
-          const el = document.querySelector('.js-return-annualized');
-          if (el && el.textContent) {
-            return parseNumber(el.textContent);
-          }
-          return null;
-        })(),
-        trackRecordYears: (() => {
-          const spans = Array.from(document.querySelectorAll('span[data-inc-value]'));
-          for (const span of spans) {
-            const parent = span.parentElement?.parentElement;
-            if (parent?.textContent?.includes('Track Record')) {
-              return parseNumber(span.getAttribute('data-inc-value'));
-            }
-          }
-          return null;
-        })(),
-        maximumDrawdown: (() => {
-          const spans = Array.from(document.querySelectorAll('span[data-inc-value]'));
-          for (const span of spans) {
-            const parent = span.parentElement?.parentElement;
-            if (parent?.textContent?.includes('Maximum Drawdown')) {
-              return parseNumber(span.getAttribute('data-inc-value'));
-            }
-          }
-          return null;
-        })(),
-        bestMonth: getDataIncValue('.js-return-best-month'),
-        worstMonth: getDataIncValue('.js-return-worst-month'),
-        numberOfTrades: parseNumber(getTextAfterLabel('Number of trades')),
-        averageTradeDuration: getTextAfterLabel('Average trade duration'),
-        winningTradesRatio: parseNumber(getTextAfterLabel('Winning trades')),
-        currentInvestors: (() => {
-          const bodyText = document.body.textContent || '';
-          const match = bodyText.match(/(\d+)\s*portfolios/i);
-          return match ? parseNumber(match[1]) : null;
-        })(),
-        aum: (() => {
-          const bodyText = document.body.textContent || '';
-          const match = bodyText.match(/\$\s*([\d,]+)\s*AUM/i);
-          return match ? parseNumber(match[1]) : null;
-        })(),
-        lastUpdated: new Date().toISOString(),
-      };
-    });
+    // Extract track record years
+    const getTrackRecordYears = (): number | null => {
+      const spans = $("span[data-inc-value]");
+      for (let i = 0; i < spans.length; i++) {
+        const span = spans.eq(i);
+        const parent = span.parent().parent();
+        if (parent.text().includes("Track Record")) {
+          return parseNumber(span.attr("data-inc-value"));
+        }
+      }
+      return null;
+    };
 
-    await browser.close();
+    // Extract maximum drawdown
+    const getMaximumDrawdown = (): number | null => {
+      const spans = $("span[data-inc-value]");
+      for (let i = 0; i < spans.length; i++) {
+        const span = spans.eq(i);
+        const parent = span.parent().parent();
+        if (parent.text().includes("Maximum Drawdown")) {
+          return parseNumber(span.attr("data-inc-value"));
+        }
+      }
+      return null;
+    };
+
+    // Get annualized return
+    const getAnnualizedReturn = (): number | null => {
+      const value = getDataIncValue(".js-return-annualized");
+      if (value !== null) return value;
+
+      // Fallback: try to get from text content
+      const el = $(".js-return-annualized");
+      if (el.length && el.text()) {
+        return parseNumber(el.text());
+      }
+      return null;
+    };
+
+    const bodyText = $.text();
+
+    const stats: DarwinexStats = {
+      returnSinceInception: getDataIncValue(".js-return-total"),
+      annualizedReturn: getAnnualizedReturn(),
+      trackRecordYears: getTrackRecordYears(),
+      maximumDrawdown: getMaximumDrawdown(),
+      bestMonth: getDataIncValue(".js-return-best-month"),
+      worstMonth: getDataIncValue(".js-return-worst-month"),
+      numberOfTrades: parseNumber(getTextAfterLabel("Number of trades")),
+      averageTradeDuration: getTextAfterLabel("Average trade duration"),
+      winningTradesRatio: parseNumber(getTextAfterLabel("Winning trades")),
+      currentInvestors: (() => {
+        const match = bodyText.match(/(\d+)\s*portfolios/i);
+        return match ? parseNumber(match[1]) : null;
+      })(),
+      aum: (() => {
+        const match = bodyText.match(/\$\s*([\d,]+)\s*AUM/i);
+        return match ? parseNumber(match[1]) : null;
+      })(),
+      lastUpdated: new Date().toISOString(),
+    };
+
     return stats;
   } catch (error) {
-    await browser.close();
     throw new Error(
-      `Failed to scrape Darwinex stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to scrape Darwinex stats: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -164,8 +158,8 @@ export async function scrapeDarwinexStats(
  * Formats the stats for display
  */
 export function formatDarwinexStats(stats: DarwinexStats): string {
-  const formatValue = (value: number | string | null, suffix = ''): string => {
-    if (value === null) return 'N/A';
+  const formatValue = (value: number | string | null, suffix = ""): string => {
+    if (value === null) return "N/A";
     return `${value}${suffix}`;
   };
 
@@ -173,17 +167,17 @@ export function formatDarwinexStats(stats: DarwinexStats): string {
 DARWIN Trading Statistics (as of ${new Date(stats.lastUpdated).toLocaleString()})
 
 Performance Metrics:
-- Return Since Inception: ${formatValue(stats.returnSinceInception, '%')}
-- Annualized Return: ${formatValue(stats.annualizedReturn, '%')}
-- Track Record: ${formatValue(stats.trackRecordYears, ' years')}
-- Maximum Drawdown: ${formatValue(stats.maximumDrawdown, '%')}
-- Best Month: ${formatValue(stats.bestMonth, '%')}
-- Worst Month: ${formatValue(stats.worstMonth, '%')}
+- Return Since Inception: ${formatValue(stats.returnSinceInception, "%")}
+- Annualized Return: ${formatValue(stats.annualizedReturn, "%")}
+- Track Record: ${formatValue(stats.trackRecordYears, " years")}
+- Maximum Drawdown: ${formatValue(stats.maximumDrawdown, "%")}
+- Best Month: ${formatValue(stats.bestMonth, "%")}
+- Worst Month: ${formatValue(stats.worstMonth, "%")}
 
 Trading Activity:
 - Number of Trades: ${formatValue(stats.numberOfTrades)}
 - Average Trade Duration: ${formatValue(stats.averageTradeDuration)}
-- Winning Trades Ratio: ${formatValue(stats.winningTradesRatio, '%')}
+- Winning Trades Ratio: ${formatValue(stats.winningTradesRatio, "%")}
 
 Investment Info:
 - Current Investors: ${formatValue(stats.currentInvestors)}
