@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   creator: "Tom's Trading Room",
   publisher: "Tom's Trading Room",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001",
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"
   ),
   openGraph: {
     type: "website",

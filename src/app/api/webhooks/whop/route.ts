@@ -60,66 +60,84 @@ export async function POST(request: NextRequest) {
   // ✅ Extract Aurea anonymous ID from checkout session metadata
   // This is the SAME anonymousId from the user's browsing session
   // Passed via buy-button: checkout_session_metadata[aurea_anonymous_id]
-  const aureaAnonymousId = 
+  const aureaAnonymousId =
     data?.checkout_session?.metadata?.aurea_anonymous_id ||
     data?.metadata?.aurea_anonymous_id ||
     data?.metadata?.aurea_id ||
     data?.checkout_session?.metadata?.aurea_id;
-  
-  const aureaSessionId = 
+
+  const aureaSessionId =
     data?.checkout_session?.metadata?.aurea_session_id ||
     data?.metadata?.aurea_session_id;
-    
-  const checkoutStartedAt = 
+
+  const checkoutStartedAt =
     data?.checkout_session?.metadata?.checkout_started_at ||
     data?.metadata?.checkout_started_at;
-  
-  console.log(`🔗 Aurea tracking - anonymousId: ${aureaAnonymousId || 'not found'}, sessionId: ${aureaSessionId || 'not found'}`);
+
+  console.log(
+    `🔗 Aurea tracking - anonymousId: ${
+      aureaAnonymousId || "not found"
+    }, sessionId: ${aureaSessionId || "not found"}`
+  );
 
   // Helper function to track events in Aurea
-  const trackAureaEvent = async (eventName: string, properties: Record<string, any>) => {
+  const trackAureaEvent = async (
+    eventName: string,
+    properties: Record<string, any>
+  ) => {
     const userId = data?.user?.id;
     if (!userId) return;
 
     // ✅ Use the SAME anonymousId from the browsing session (critical for session linking)
     const anonymousIdToUse = aureaAnonymousId || userId;
-    
+
     // ✅ Use the SAME sessionId from the browsing session (critical for session continuity)
     const sessionIdToUse = aureaSessionId || aureaAnonymousId || userId;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_AUREA_API_URL || 'http://localhost:3000/api'}/track/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
-          "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
-        },
-        body: JSON.stringify({
-          events: [{
-            eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            eventName,
-            properties: {
-              ...properties,
-              product: product || "TTR Membership",
-              username,
-              email,
-            },
-            context: {
-              user: {
-                userId: email || undefined, // Use email as userId for consistency
-                anonymousId: anonymousIdToUse, // ✅ SAME anonymousId from browsing session
+      await fetch(
+        `${
+          process.env.NEXT_PUBLIC_AUREA_API_URL || "http://localhost:3000/api"
+        }/track/events`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
+            "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
+          },
+          body: JSON.stringify({
+            events: [
+              {
+                eventId: `evt_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
+                eventName,
+                properties: {
+                  ...properties,
+                  product: product || "TTR Membership",
+                  username,
+                  email,
+                },
+                context: {
+                  user: {
+                    userId: email || undefined, // Use email as userId for consistency
+                    anonymousId: anonymousIdToUse, // ✅ SAME anonymousId from browsing session
+                  },
+                  session: {
+                    sessionId: sessionIdToUse, // ✅ SAME sessionId from browsing session
+                  },
+                },
+                timestamp: Date.now(),
               },
-              session: {
-                sessionId: sessionIdToUse, // ✅ SAME sessionId from browsing session
-              },
-            },
-            timestamp: Date.now(),
-          }],
-          batch: true,
-        }),
-      });
-      console.log(`✅ Tracked ${eventName} in Aurea with anonymousId: ${anonymousIdToUse}, sessionId: ${sessionIdToUse}`);
+            ],
+            batch: true,
+          }),
+        }
+      );
+      console.log(
+        `✅ Tracked ${eventName} in Aurea with anonymousId: ${anonymousIdToUse}, sessionId: ${sessionIdToUse}`
+      );
     } catch (error) {
       console.error(`Failed to track ${eventName} in Aurea:`, error);
     }
@@ -128,49 +146,62 @@ export async function POST(request: NextRequest) {
   // Helper function to identify user in Aurea (link anonymous → known user)
   const identifyAureaUser = async () => {
     if (!email || !aureaAnonymousId) {
-      console.log(`⏭️  Skipping Aurea identify: email=${!!email}, anonymousId=${!!aureaAnonymousId}`);
+      console.log(
+        `⏭️  Skipping Aurea identify: email=${!!email}, anonymousId=${!!aureaAnonymousId}`
+      );
       return;
     }
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_AUREA_API_URL || 'http://localhost:3000/api'}/track/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
-          "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
-        },
-        body: JSON.stringify({
-          events: [{
-            eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            eventName: "user_identified",
-            properties: {
-              userId: email,
-              anonymousId: aureaAnonymousId,
-              traits: {
-                name: name || username || "Unknown",
-                email: email,
-                username: username || "",
-                product: product || "TTR Membership",
-                whopUserId: data?.user?.id || "",
+      await fetch(
+        `${
+          process.env.NEXT_PUBLIC_AUREA_API_URL || "http://localhost:3000/api"
+        }/track/events`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
+            "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
+          },
+          body: JSON.stringify({
+            events: [
+              {
+                eventId: `evt_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
+                eventName: "user_identified",
+                properties: {
+                  userId: email,
+                  anonymousId: aureaAnonymousId,
+                  traits: {
+                    name: name || username || "Unknown",
+                    email: email,
+                    username: username || "",
+                    product: product || "TTR Membership",
+                    whopUserId: data?.user?.id || "",
+                  },
+                  timestamp: Date.now(),
+                },
+                context: {
+                  user: {
+                    userId: email,
+                    anonymousId: aureaAnonymousId,
+                  },
+                  session: {
+                    sessionId: aureaAnonymousId,
+                  },
+                },
+                timestamp: Date.now(),
               },
-              timestamp: Date.now(),
-            },
-            context: {
-              user: {
-                userId: email,
-                anonymousId: aureaAnonymousId,
-              },
-              session: {
-                sessionId: aureaAnonymousId,
-              },
-            },
-            timestamp: Date.now(),
-          }],
-          batch: true,
-        }),
-      });
-      console.log(`✅ Identified user in Aurea: ${email} (anonymousId: ${aureaAnonymousId})`);
+            ],
+            batch: true,
+          }),
+        }
+      );
+      console.log(
+        `✅ Identified user in Aurea: ${email} (anonymousId: ${aureaAnonymousId})`
+      );
     } catch (error) {
       console.error("Failed to identify user in Aurea:", error);
     }
@@ -214,14 +245,18 @@ export async function POST(request: NextRequest) {
 
     // ✅ UPDATED: Track conversion with checkout duration and session bridging
     const revenueAmount = finalAmount || subtotal || 9900; // Fallback to $99 if no amount
-    
+
     // Get original session ID from metadata (passed from checkout initiation)
-    const originalSessionId = data?.metadata?.session_id || data?.checkout_session?.metadata?.session_id;
-    
+    const originalSessionId =
+      data?.metadata?.session_id ||
+      data?.checkout_session?.metadata?.session_id;
+
     // Calculate checkout duration from webhook metadata if available
     const aureaCheckoutStartTime = data?.metadata?.checkout_started_at;
-    const checkoutDuration = aureaCheckoutStartTime 
-      ? Math.floor((Date.now() - Number.parseInt(aureaCheckoutStartTime, 10)) / 1000)
+    const checkoutDuration = aureaCheckoutStartTime
+      ? Math.floor(
+          (Date.now() - Number.parseInt(aureaCheckoutStartTime, 10)) / 1000
+        )
       : null;
 
     // ✅ Track conversion AND end the session
@@ -236,7 +271,7 @@ export async function POST(request: NextRequest) {
       source: "whop_webhook",
       sessionEnd: true, // ✅ Signal to end the session
     });
-    
+
     // ✅ Track session_end event to properly close the session
     await trackAureaEvent("session_end", {
       converted: true,
@@ -248,21 +283,21 @@ export async function POST(request: NextRequest) {
     });
 
     // Mark user as purchased so client-side can detect and redirect
-    if (aureaAnonymousId) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/check-purchase`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            anonymousId: aureaAnonymousId,
-            secret: process.env.PURCHASE_CHECK_SECRET || "dev-secret-123",
-          }),
-        });
-        console.log(`✅ Marked user ${aureaAnonymousId} for redirect to thank-you page`);
-      } catch (error) {
-        console.error("Failed to mark purchase for redirect:", error);
-      }
-    }
+    // if (aureaAnonymousId) {
+    //   try {
+    //     await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/check-purchase`, {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({
+    //         anonymousId: aureaAnonymousId,
+    //         secret: process.env.PURCHASE_CHECK_SECRET || "dev-secret-123",
+    //       }),
+    //     });
+    //     console.log(`✅ Marked user ${aureaAnonymousId} for redirect to thank-you page`);
+    //   } catch (error) {
+    //     console.error("Failed to mark purchase for redirect:", error);
+    //   }
+    // }
 
     // Capture email for mailing list
     if (email) {
