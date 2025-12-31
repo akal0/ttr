@@ -197,7 +197,7 @@ const Hero = () => {
         alt="heroBackground"
       />
 
-      <div className="relative w-full flex items-center justify-center py-5 z-10">
+      <div className="relative w-full flex items-center justify-center py-8 md:py-5 z-10 text-center px-8">
         <GlowEffect
           colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
           mode="breathe"
@@ -208,11 +208,11 @@ const Hero = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-sky-500/10 via-transparent to-transparent backdrop-blur-2xl" />
         <h1 className="relative text-sm font-medium text-white/75">
-          🎉 To celebrate the <span className="text-white">New Year</span>,
-          we're giving back to you! Use code:
+          To celebrate the <span className="text-white">New Year</span>, we're
+          giving back to you! Use code:
           <span className="text-white"> NEWYEAR </span> at checkout for{" "}
           <span className="text-white">50% off!</span> for the next{" "}
-          <span className="text-white">48 hours!</span>
+          <span className="text-white">48 hours</span> 🎉
         </h1>
       </div>
 
