@@ -1,3 +1,5 @@
+"use client";
+
 import SkillBalanceRadar from "../ui/animated-clipped-radar-chart";
 import EquitySmoothnessChart from "../ui/animated-highlighted-chart";
 import { Button } from "../ui/button";
@@ -8,10 +10,18 @@ import { AccountSurvivalChart } from "../ui/glowing-line";
 import RealityCheckRadialChart from "../ui/glowing-radial-chart";
 import { TextEffect } from "../ui/text-effect";
 import { Tilt } from "../ui/tilt";
+import { useSectionTracking } from "@/lib/hooks/use-section-tracking";
 
 const About = () => {
+  const trackingRef = useSectionTracking({
+    sectionName: "About",
+    eventName: "about_section_viewed",
+    threshold: 0.3,
+  });
+  
   return (
     <div
+      ref={trackingRef}
       id="about"
       className="flex flex-col h-full w-full max-w-7xl mx-auto py-16 gap-12 px-4 md:px-0"
     >

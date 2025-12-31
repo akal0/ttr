@@ -8,17 +8,35 @@ import { GlowEffect } from "../ui/glow-effect";
 import { useRef, useEffect } from "react";
 import { BuyButton } from "../buy-button";
 import { trackEvent } from "aurea-tracking-sdk";
+import { useSectionTracking, useCTAHoverTracking } from "@/lib/hooks/use-section-tracking";
 
 const CTA = () => {
-  const buttonRef = useRef(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(buttonRef, { once: true, amount: 0.5 });
+  
+  // Track CTA section view with new SDK
+  const trackingRef = useSectionTracking({
+    sectionName: "Final CTA",
+    eventName: "pricing_section_viewed",
+    threshold: 0.5,
+  });
+  
+  // Track CTA button hover
+  useCTAHoverTracking(buttonRef, "Join TTR - Final CTA");
 
-  // Track when CTA section comes into view
+  // Track when CTA section comes into view (legacy)
   useEffect(() => {
     if (isInView) {
-      trackEvent("cta_section_viewed", {
-        section: "final_cta",
-      });
+      // Use new SDK if available
+      if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+        (window as any).aureaSDK.trackEvent("cta_section_viewed", {
+          section: "final_cta",
+        });
+      } else {
+        trackEvent("cta_section_viewed", {
+          section: "final_cta",
+        });
+      }
     }
   }, [isInView]);
 

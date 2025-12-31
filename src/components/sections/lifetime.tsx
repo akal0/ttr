@@ -1,10 +1,20 @@
+"use client";
+
 import Image from "next/image";
 import { TextEffect } from "../ui/text-effect";
 import DarwinexStats from "./darwinex-stats";
+import { useSectionTracking } from "@/lib/hooks/use-section-tracking";
 
 const Lifetime = () => {
+  const trackingRef = useSectionTracking({
+    sectionName: "Payouts",
+    eventName: "stats_viewed",
+    threshold: 0.4,
+  });
+
   return (
     <div
+      ref={trackingRef}
       id="payouts"
       className="flex flex-col h-full w-full max-w-7xl mx-auto md:py-16 gap-16 px-4 md:px-0"
     >
@@ -40,12 +50,12 @@ const Lifetime = () => {
             className="text-center md:text-lg text-white font-medium max-w-3xl mx-auto md:leading-7"
             preset="fade-in-blur"
           >
-            The lifetime payouts speak for me.
+            My Darwinex speaks for me.
           </TextEffect>
         </div>
       </div>
 
-      <div className="flex flex-col md:grid md:grid-cols-3 gap-4 items-center">
+      {/* <div className="flex flex-col md:grid md:grid-cols-3 gap-4 items-center">
         <div className="rounded-3xl overflow-hidden relative h-103 w-full">
           <Image
             src="/payouts/ftmo.jpeg"
@@ -72,7 +82,7 @@ const Lifetime = () => {
             className="object-cover"
           />
         </div>
-      </div>
+      </div> */}
 
       <DarwinexStats />
     </div>

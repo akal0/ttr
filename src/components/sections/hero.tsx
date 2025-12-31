@@ -23,6 +23,15 @@ const Hero = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const { scrollTo } = useLenis();
 
+  // Track video milestones
+  const [videoMilestones, setVideoMilestones] = useState({
+    started: false,
+    watched25: false,
+    watched50: false,
+    watched75: false,
+    completed: false,
+  });
+
   useEffect(() => {
     const video = videoRef.current;
 
@@ -32,15 +41,77 @@ const Hero = () => {
       // Set isPaused to true when video ends
       const handleVideoEnd = () => {
         setIsPaused(true);
+
+        // Track video completion
+        if (
+          !videoMilestones.completed &&
+          typeof window !== "undefined" &&
+          (window as any).aureaSDK
+        ) {
+          (window as any).aureaSDK.trackEvent("video_completed", {
+            duration: video.duration,
+            watchTime: video.currentTime,
+          });
+          setVideoMilestones((m) => ({ ...m, completed: true }));
+        }
+      };
+
+      // Track video start
+      const handlePlay = () => {
+        if (
+          !videoMilestones.started &&
+          typeof window !== "undefined" &&
+          (window as any).aureaSDK
+        ) {
+          (window as any).aureaSDK.trackEvent("video_started", {
+            videoTitle: "TTR Sales Video",
+          });
+          setVideoMilestones((m) => ({ ...m, started: true }));
+        }
+      };
+
+      // Track video progress milestones
+      const handleTimeUpdate = () => {
+        if (!video.duration) return;
+
+        const percent = (video.currentTime / video.duration) * 100;
+
+        if (typeof window !== "undefined" && (window as any).aureaSDK) {
+          if (percent >= 25 && !videoMilestones.watched25) {
+            (window as any).aureaSDK.trackEvent("video_25_percent", {
+              currentTime: video.currentTime,
+              totalDuration: video.duration,
+            });
+            setVideoMilestones((m) => ({ ...m, watched25: true }));
+          }
+          if (percent >= 50 && !videoMilestones.watched50) {
+            (window as any).aureaSDK.trackEvent("video_50_percent", {
+              currentTime: video.currentTime,
+              totalDuration: video.duration,
+            });
+            setVideoMilestones((m) => ({ ...m, watched50: true }));
+          }
+          if (percent >= 75 && !videoMilestones.watched75) {
+            (window as any).aureaSDK.trackEvent("video_75_percent", {
+              currentTime: video.currentTime,
+              totalDuration: video.duration,
+            });
+            setVideoMilestones((m) => ({ ...m, watched75: true }));
+          }
+        }
       };
 
       video.addEventListener("ended", handleVideoEnd);
+      video.addEventListener("play", handlePlay);
+      video.addEventListener("timeupdate", handleTimeUpdate);
 
       return () => {
         video.removeEventListener("ended", handleVideoEnd);
+        video.removeEventListener("play", handlePlay);
+        video.removeEventListener("timeupdate", handleTimeUpdate);
       };
     }
-  }, []);
+  }, [videoMilestones]);
 
   useEffect(() => {
     // Fetch member count
@@ -99,7 +170,7 @@ const Hero = () => {
   return (
     <div
       id="home"
-      className="flex flex-col h-full w-full relative bg-transparent"
+      className="flex flex-col h-full w-full relative bg-transparent min-h-screen "
     >
       <GlowEffect
         colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
@@ -174,16 +245,16 @@ const Hero = () => {
         </nav>
       </div>
 
-      <div className="flex flex-col gap-8 items-center justify-center h-full mt-4 md:mt-20 px-8 md:px-0 md:max-w-7xl mx-auto ">
+      <div className="flex flex-col gap-8 items-center justify-center h-full mt-4 md:mt-20 px-4 md:px-0 md:max-w-7xl mx-auto ">
         {/* Hero content */}
         <div className="flex flex-col gap-8 items-center justify-center h-full">
-          <div className="flex flex-col gap-4 md:gap-8 items-center justify-center">
+          <div className="flex flex-col gap-4 md:gap-6 items-center justify-center">
             <TextEffect
               preset="fade-in-blur"
-              speedReveal={1.1}
+              speedReveal={1.5}
               speedSegment={0.3}
               as="h1"
-              className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-17"
+              className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-16"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
               Master prop firm trading and build six-figure accounts in a couple
@@ -193,9 +264,9 @@ const Hero = () => {
             <div className="flex flex-col gap-3">
               <TextEffect
                 per="char"
-                delay={1.5}
-                speedReveal={1.5}
-                speedSegment={0.3}
+                delay={1}
+                speedReveal={2}
+                speedSegment={1}
                 className="max-w-2xl text-center tracking-tight font-medium text-lg"
                 preset="fade-in-blur"
               >
@@ -205,9 +276,9 @@ const Hero = () => {
 
               <TextEffect
                 per="char"
-                delay={3.25}
-                speedReveal={3.5}
-                speedSegment={0.3}
+                delay={1.5}
+                speedReveal={3}
+                speedSegment={1}
                 className="max-w-2xl text-center tracking-tight text-white/85 font-medium"
                 preset="fade-in-blur"
               >
@@ -222,15 +293,57 @@ const Hero = () => {
           <BuyButton
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.5, delay: 5.5 }}
+            transition={{ duration: 1.5, delay: 3.5 }}
           >
             Take your first step to profitability
           </BuyButton>
         </div>
 
-        {/* Hero video */}
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-4 items-center relative z-20 h-full w-full mt-8">
+          <motion.div
+            className="rounded-3xl overflow-hidden relative z-10 h-103 w-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 3.5 }}
+          >
+            <Image
+              src="/payouts/ftmo.jpeg"
+              alt="lifetimeFTMO"
+              fill
+              className="object-cover object-center md:object-cover w-full h-full rounded-3xl"
+            />
+          </motion.div>
 
-        <div
+          <motion.div
+            className="rounded-3xl overflow-hidden relative z-10 h-120 md:h-144 w-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 5.5 }}
+          >
+            <Image
+              src="/payouts/fundingpips.jpeg"
+              alt="lifetimeFundingPips"
+              fill
+              className="object-cover"
+            />
+          </motion.div>
+
+          <motion.div
+            className="rounded-3xl overflow-hidden relative z-10 w-full h-103"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 4.5 }}
+          >
+            <Image
+              src="/payouts/e8.jpeg"
+              alt="lifetimeE8"
+              fill
+              className="object-cover"
+            />
+          </motion.div>
+        </div>
+        {/* Hero video */}
+        {/* <div
           ref={videoContainerRef}
           className="relative w-full aspect-video my-8 rounded-4xl overflow-hidden"
         >
@@ -254,7 +367,7 @@ const Hero = () => {
             <source src="/video.mp4" />
             <track kind="captions" />
           </video>
-        </div>
+        </div> */}
       </div>
     </div>
   );

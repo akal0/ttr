@@ -166,6 +166,7 @@ const faqs = [
 
 const FAQ = () => {
   const [openIndexes, setOpenIndexes] = useState<boolean[]>([]);
+  const [faqOpenCount, setFaqOpenCount] = useState(0);
 
   const toggle = (i: number) => {
     setOpenIndexes((prev) => {
@@ -174,10 +175,31 @@ const FAQ = () => {
 
       // Track FAQ interaction
       if (!prev[i]) {
-        trackEvent("faq_opened", {
-          question: faqs[i].title,
-          questionIndex: i,
-        });
+        const newCount = faqOpenCount + 1;
+        setFaqOpenCount(newCount);
+        
+        // Use new SDK trackEvent if available
+        if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+          // Track individual FAQ open
+          (window as any).aureaSDK.trackEvent("faq_opened", {
+            question: faqs[i].title,
+            questionIndex: i,
+            totalFaqsOpened: newCount
+          });
+          
+          // If user opened 3+ FAQs, they're really researching!
+          if (newCount >= 3) {
+            (window as any).aureaSDK.trackEvent("faq_multiple_opened", {
+              count: newCount
+            });
+          }
+        } else {
+          // Fallback to old method
+          trackEvent("faq_opened", {
+            question: faqs[i].title,
+            questionIndex: i,
+          });
+        }
       }
 
       return newArr;

@@ -57,19 +57,35 @@ export async function POST(request: NextRequest) {
     return `${currency} ${(amount / 100).toFixed(2)}`;
   };
 
-  // Extract Aurea anonymous ID from checkout URL metadata (if available)
-  // Whop stores custom data in the checkout_session metadata
-  const aureaAnonymousId = data?.metadata?.aurea_id || data?.checkout_session?.metadata?.aurea_id;
+  // ✅ Extract Aurea anonymous ID from checkout session metadata
+  // This is the SAME anonymousId from the user's browsing session
+  // Passed via buy-button: checkout_session_metadata[aurea_anonymous_id]
+  const aureaAnonymousId = 
+    data?.checkout_session?.metadata?.aurea_anonymous_id ||
+    data?.metadata?.aurea_anonymous_id ||
+    data?.metadata?.aurea_id ||
+    data?.checkout_session?.metadata?.aurea_id;
   
-  console.log(`🔗 Aurea tracking ID: ${aureaAnonymousId || 'not found'}`);
+  const aureaSessionId = 
+    data?.checkout_session?.metadata?.aurea_session_id ||
+    data?.metadata?.aurea_session_id;
+    
+  const checkoutStartedAt = 
+    data?.checkout_session?.metadata?.checkout_started_at ||
+    data?.metadata?.checkout_started_at;
+  
+  console.log(`🔗 Aurea tracking - anonymousId: ${aureaAnonymousId || 'not found'}, sessionId: ${aureaSessionId || 'not found'}`);
 
   // Helper function to track events in Aurea
   const trackAureaEvent = async (eventName: string, properties: Record<string, any>) => {
     const userId = data?.user?.id;
     if (!userId) return;
 
-    // Use the Aurea anonymous ID if available, otherwise fall back to Whop user ID
+    // ✅ Use the SAME anonymousId from the browsing session (critical for session linking)
     const anonymousIdToUse = aureaAnonymousId || userId;
+    
+    // ✅ Use the SAME sessionId from the browsing session (critical for session continuity)
+    const sessionIdToUse = aureaSessionId || aureaAnonymousId || userId;
 
     try {
       await fetch(`${process.env.NEXT_PUBLIC_AUREA_API_URL || 'http://localhost:3000/api'}/track/events`, {
@@ -92,10 +108,10 @@ export async function POST(request: NextRequest) {
             context: {
               user: {
                 userId: email || undefined, // Use email as userId for consistency
-                anonymousId: anonymousIdToUse, // Use the same anonymousId from client-side
+                anonymousId: anonymousIdToUse, // ✅ SAME anonymousId from browsing session
               },
               session: {
-                sessionId: anonymousIdToUse, // Use same session ID
+                sessionId: sessionIdToUse, // ✅ SAME sessionId from browsing session
               },
             },
             timestamp: Date.now(),
@@ -103,9 +119,60 @@ export async function POST(request: NextRequest) {
           batch: true,
         }),
       });
-      console.log(`✅ Tracked ${eventName} in Aurea with anonymousId: ${anonymousIdToUse}`);
+      console.log(`✅ Tracked ${eventName} in Aurea with anonymousId: ${anonymousIdToUse}, sessionId: ${sessionIdToUse}`);
     } catch (error) {
       console.error(`Failed to track ${eventName} in Aurea:`, error);
+    }
+  };
+
+  // Helper function to identify user in Aurea (link anonymous → known user)
+  const identifyAureaUser = async () => {
+    if (!email || !aureaAnonymousId) {
+      console.log(`⏭️  Skipping Aurea identify: email=${!!email}, anonymousId=${!!aureaAnonymousId}`);
+      return;
+    }
+
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_AUREA_API_URL || 'http://localhost:3000/api'}/track/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Aurea-API-Key": process.env.NEXT_PUBLIC_AUREA_API_KEY || "",
+          "X-Aurea-Funnel-ID": process.env.NEXT_PUBLIC_AUREA_FUNNEL_ID || "",
+        },
+        body: JSON.stringify({
+          events: [{
+            eventId: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            eventName: "user_identified",
+            properties: {
+              userId: email,
+              anonymousId: aureaAnonymousId,
+              traits: {
+                name: name || username || "Unknown",
+                email: email,
+                username: username || "",
+                product: product || "TTR Membership",
+                whopUserId: data?.user?.id || "",
+              },
+              timestamp: Date.now(),
+            },
+            context: {
+              user: {
+                userId: email,
+                anonymousId: aureaAnonymousId,
+              },
+              session: {
+                sessionId: aureaAnonymousId,
+              },
+            },
+            timestamp: Date.now(),
+          }],
+          batch: true,
+        }),
+      });
+      console.log(`✅ Identified user in Aurea: ${email} (anonymousId: ${aureaAnonymousId})`);
+    } catch (error) {
+      console.error("Failed to identify user in Aurea:", error);
     }
   };
 
@@ -142,13 +209,42 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Track conversion in Aurea
+    // Identify the user in Aurea (link anonymous → known user)
+    await identifyAureaUser();
+
+    // ✅ UPDATED: Track conversion with checkout duration and session bridging
     const revenueAmount = finalAmount || subtotal || 9900; // Fallback to $99 if no amount
-    await trackAureaEvent("purchase", {
+    
+    // Get original session ID from metadata (passed from checkout initiation)
+    const originalSessionId = data?.metadata?.session_id || data?.checkout_session?.metadata?.session_id;
+    
+    // Calculate checkout duration from webhook metadata if available
+    const aureaCheckoutStartTime = data?.metadata?.checkout_started_at;
+    const checkoutDuration = aureaCheckoutStartTime 
+      ? Math.floor((Date.now() - Number.parseInt(aureaCheckoutStartTime, 10)) / 1000)
+      : null;
+
+    // ✅ Track conversion AND end the session
+    // This marks the session as completed with a successful purchase
+    await trackAureaEvent("checkout_completed", {
       conversionType: "purchase",
       revenue: revenueAmount / 100, // Convert cents to dollars
       currency: currency || "USD",
       orderId: data?.id || "",
+      checkoutDuration, // Time spent in checkout flow
+      originalSessionId, // Link back to browsing session
+      source: "whop_webhook",
+      sessionEnd: true, // ✅ Signal to end the session
+    });
+    
+    // ✅ Track session_end event to properly close the session
+    await trackAureaEvent("session_end", {
+      converted: true,
+      conversionType: "purchase",
+      revenue: revenueAmount / 100,
+      orderId: data?.id || "",
+      duration: checkoutDuration || 0,
+      source: "whop_webhook",
     });
 
     // Mark user as purchased so client-side can detect and redirect

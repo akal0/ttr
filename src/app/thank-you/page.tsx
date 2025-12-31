@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle, TrendingUp, Users, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { trackEvent } from "aurea-tracking-sdk";
+import { trackEvent, identifyUser } from "aurea-tracking-sdk";
 
 export default function ThankYouPage() {
   const [mounted, setMounted] = useState(false);
@@ -12,21 +12,91 @@ export default function ThankYouPage() {
   useEffect(() => {
     setMounted(true);
 
-    // Track thank you page view
-    trackEvent("thank_you_page_viewed", {
-      source: "whop_checkout",
-      timestamp: new Date().toISOString(),
-    });
+    // Try to get user info from URL params (if Whop passes them)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userEmail = urlParams.get("email");
+    const userName = urlParams.get("name");
+    const orderId = urlParams.get("order_id") || urlParams.get("transaction_id") || `order_${Date.now()}`;
+    const fromCheckout = urlParams.get("from_checkout") === "true";
+    const originalSessionId = urlParams.get("session_id"); // ✅ NEW: Get original session ID
 
-    // Check if conversion was already tracked by webhook
-    // If not tracked yet, we can track it here as a fallback
-    const conversionTracked = sessionStorage.getItem("conversion_tracked");
-    if (!conversionTracked) {
-      trackEvent("checkout_completed", {
-        source: "thank_you_page",
-        fallback: true,
+    // ✅ NEW: Calculate checkout duration from sessionStorage
+    const checkoutStartTime = sessionStorage.getItem('checkout_started_at');
+    const checkoutDuration = checkoutStartTime 
+      ? Math.floor((Date.now() - Number.parseInt(checkoutStartTime, 10)) / 1000)
+      : null;
+
+    // Use new SDK checkoutCompleted() method if available
+    if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+      // ✅ UPDATED: Pass originalSessionId and checkoutDuration
+      (window as any).aureaSDK.checkoutCompleted({
+        orderId,
+        revenue: 99,
+        currency: "USD",
+        paymentMethod: "stripe",
+        products: [{
+          productId: "ttr_membership",
+          productName: "TTR VIP Access",
+          price: 99,
+          currency: "USD",
+          quantity: 1
+        }],
+        originalSessionId,  // ✅ NEW: Link to pre-checkout session
+        checkoutDuration,   // ✅ NEW: Time spent on Whop
       });
-      sessionStorage.setItem("conversion_tracked", "true");
+      
+      console.log("[TTR] Checkout completed with session linking");
+      console.log("  Original Session:", originalSessionId);
+      console.log("  Checkout Duration:", checkoutDuration, "seconds");
+    } else {
+      // Fallback to old tracking
+      const conversionTracked = sessionStorage.getItem("conversion_tracked");
+      if (!conversionTracked) {
+        trackEvent("checkout_completed", {
+          source: "thank_you_page",
+          fallback: true,
+          orderId,
+          checkoutDuration,
+        });
+        sessionStorage.setItem("conversion_tracked", "true");
+      }
+    }
+
+    // Identify user if we have their email
+    if (userEmail) {
+      if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+        (window as any).aureaSDK.identify(userEmail, {
+          name: userName || "TTR Member",
+          email: userEmail,
+          source: "thank_you_page",
+          product: "TTR Membership",
+          purchaseDate: new Date().toISOString(),
+        });
+      } else {
+        identifyUser(userEmail, {
+          name: userName || "TTR Member",
+          email: userEmail,
+          source: "thank_you_page",
+          product: "TTR Membership",
+        });
+      }
+      console.log("[TTR] User identified:", userEmail);
+    }
+
+    // Track thank you page view
+    if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+      (window as any).aureaSDK.trackEvent("thank_you_page_viewed", {
+        source: "whop_checkout",
+        fromCheckout,
+        orderId,
+        checkoutDuration,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      trackEvent("thank_you_page_viewed", {
+        source: "whop_checkout",
+        timestamp: new Date().toISOString(),
+      });
     }
   }, []);
 

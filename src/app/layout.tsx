@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AureaTracking } from "@/components/aurea-tracking";
+import { ClickIdCapture } from "@/components/click-id-capture";
+import { Suspense } from "react";
 
 import { Inter } from "next/font/google";
 
@@ -75,7 +77,61 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Capture click IDs IMMEDIATELY before Next.js can strip them
+              (function() {
+                try {
+                  const url = new URL(window.location.href);
+                  const params = url.searchParams;
+                  
+                  const clickIds = {};
+                  const now = Date.now();
+                  
+                  // Attribution windows in milliseconds
+                  const windows = {
+                    fbclid: 28 * 24 * 60 * 60 * 1000,
+                    gclid: 90 * 24 * 60 * 60 * 1000,
+                    ttclid: 28 * 24 * 60 * 60 * 1000,
+                    msclkid: 90 * 24 * 60 * 60 * 1000
+                  };
+                  
+                  // Extract all click IDs
+                  const ids = ['fbclid', 'fbadid', 'gclid', 'gbraid', 'wbraid', 'dclid', 'ttclid', 'tt_content', 'msclkid', 'twclid', 'li_fat_id', 'ScCid', 'epik', 'rdt_cid'];
+                  
+                  ids.forEach(function(id) {
+                    const value = params.get(id);
+                    if (value) {
+                      clickIds[id] = {
+                        id: value,
+                        timestamp: now,
+                        expiresAt: now + (windows[id] || 30 * 24 * 60 * 60 * 1000)
+                      };
+                    }
+                  });
+                  
+                  // Store in localStorage if we found any
+                  if (Object.keys(clickIds).length > 0) {
+                    const existing = localStorage.getItem('aurea_click_ids');
+                    const existingData = existing ? JSON.parse(existing) : {};
+                    const merged = Object.assign({}, existingData, clickIds);
+                    localStorage.setItem('aurea_click_ids', JSON.stringify(merged));
+                    console.log('[Early ClickID Capture] Saved:', Object.keys(clickIds).join(', '));
+                  }
+                } catch (e) {
+                  console.error('[Early ClickID Capture] Error:', e);
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} antialiased`}>
+        <Suspense fallback={null}>
+          <ClickIdCapture />
+        </Suspense>
         <AureaTracking />
         {children}
       </body>

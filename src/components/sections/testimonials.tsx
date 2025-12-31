@@ -7,6 +7,7 @@ import { useRef, useState, useEffect } from "react";
 import useDimension from "@/lib/hooks/use-dimension";
 import AvatarStack from "../avatar-stack";
 import { TextEffect } from "../ui/text-effect";
+import { useSectionTracking } from "@/lib/hooks/use-section-tracking";
 
 const testimonials = [
   "/testimonials/1.png",
@@ -36,6 +37,13 @@ const testimonials = [
 const Testimonials = () => {
   const container = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Track when testimonials section comes into view
+  const trackingRef = useSectionTracking({
+    sectionName: "Testimonials",
+    eventName: "testimonials_viewed",
+    threshold: 0.3,
+  });
 
   const { height } = useDimension();
 
@@ -79,6 +87,7 @@ const Testimonials = () => {
 
   return (
     <div
+      ref={trackingRef}
       className="w-full flex items-center flex-col gap-8 bg-transparent"
       id="testimonials"
     >
