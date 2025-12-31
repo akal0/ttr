@@ -5,7 +5,6 @@ import Link from "next/link";
 import { GlowEffect } from "../ui/glow-effect";
 import { Button } from "../ui/button";
 import { BorderTrail } from "../ui/border-trail";
-import { ProgressiveBlur } from "../ui/progressive-blur";
 import { useEffect, useRef, useState } from "react";
 import VideoPlayerControls from "../video-player-controls";
 import Image from "next/image";
@@ -13,13 +12,6 @@ import { TextEffect } from "../ui/text-effect";
 import { motion } from "framer-motion";
 import { BuyButton } from "../buy-button";
 import { useLenis } from "@/lib/lenis-context";
-import {
-  Banner,
-  BannerClose,
-  BannerAction,
-  BannerIcon,
-  BannerTitle,
-} from "../ui/shadcn-io/banner";
 import { CircleAlert } from "lucide-react";
 
 const Hero = () => {
