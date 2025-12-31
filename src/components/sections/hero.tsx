@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GlowEffect } from "../ui/glow-effect";
 import { Button } from "../ui/button";
 import { BorderTrail } from "../ui/border-trail";
+import { ProgressiveBlur } from "../ui/progressive-blur";
 import { useEffect, useRef, useState } from "react";
 import VideoPlayerControls from "../video-player-controls";
 import Image from "next/image";
@@ -12,6 +13,14 @@ import { TextEffect } from "../ui/text-effect";
 import { motion } from "framer-motion";
 import { BuyButton } from "../buy-button";
 import { useLenis } from "@/lib/lenis-context";
+import {
+  Banner,
+  BannerClose,
+  BannerAction,
+  BannerIcon,
+  BannerTitle,
+} from "../ui/shadcn-io/banner";
+import { CircleAlert } from "lucide-react";
 
 const Hero = () => {
   const [isPaused, setIsPaused] = useState<boolean>(true);
@@ -188,6 +197,25 @@ const Hero = () => {
         alt="heroBackground"
       />
 
+      <div className="relative w-full flex items-center justify-center py-5 z-10">
+        <GlowEffect
+          colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
+          mode="breathe"
+          blur="strongest"
+          duration={3}
+          scale={1}
+          className="h-[calc(100%-7%)]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-sky-500/10 via-transparent to-transparent backdrop-blur-2xl" />
+        <h1 className="relative text-sm font-medium text-white/75">
+          🎉 To celebrate the <span className="text-white">New Year</span>,
+          we're giving back to you! Use code:
+          <span className="text-white"> NEWYEAR </span> at checkout for{" "}
+          <span className="text-white">50% off!</span> for the next{" "}
+          <span className="text-white">48 hours!</span>
+        </h1>
+      </div>
+
       <div className="flex justify-center md:justify-between items-center py-8 md:max-w-7xl mx-auto w-full">
         <h1 className="text-2xl font-bold tracking-[-0.15rem]"> TTR </h1>
 
@@ -245,7 +273,7 @@ const Hero = () => {
         </nav>
       </div>
 
-      <div className="flex flex-col gap-8 items-center justify-center h-full mt-4 md:mt-20 px-4 md:px-0 md:max-w-7xl mx-auto ">
+      <div className="flex flex-col gap-8 items-center justify-center h-full mt-4 md:mt-20 px-4 md:px-0 md:max-w-7xl mx-auto relative z-10">
         {/* Hero content */}
         <div className="flex flex-col gap-8 items-center justify-center h-full">
           <div className="flex flex-col gap-4 md:gap-6 items-center justify-center">
@@ -254,7 +282,7 @@ const Hero = () => {
               speedReveal={1.5}
               speedSegment={0.3}
               as="h1"
-              className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-16"
+              className="text-4xl md:text-6xl font-medium md:tracking-[-0.12rem] text-center md:leading-17"
               segmentClassName="bg-clip-text text-transparent bg-linear-to-b from-white to-blue-300"
             >
               Master prop firm trading and build six-figure accounts in a couple
