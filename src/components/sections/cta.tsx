@@ -2,25 +2,30 @@
 
 import Image from "next/image";
 import { TextEffect } from "../ui/text-effect";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import { motion, useInView } from "framer-motion";
 import { GlowEffect } from "../ui/glow-effect";
 import { useRef, useEffect } from "react";
 import { BuyButton } from "../buy-button";
 import { trackEvent } from "aurea-tracking-sdk";
-import { useSectionTracking, useCTAHoverTracking } from "@/lib/hooks/use-section-tracking";
+import {
+  useSectionTracking,
+  useCTAHoverTracking,
+} from "@/lib/hooks/use-section-tracking";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const CTA = () => {
   const buttonRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(buttonRef, { once: true, amount: 0.5 });
-  
+
   // Track CTA section view with new SDK
   const trackingRef = useSectionTracking({
     sectionName: "Final CTA",
     eventName: "pricing_section_viewed",
     threshold: 0.5,
   });
-  
+
   // Track CTA button hover
   useCTAHoverTracking(buttonRef, "Join TTR - Final CTA");
 
@@ -28,7 +33,7 @@ const CTA = () => {
   useEffect(() => {
     if (isInView) {
       // Use new SDK if available
-      if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+      if (typeof window !== "undefined" && (window as any).aureaSDK) {
         (window as any).aureaSDK.trackEvent("cta_section_viewed", {
           section: "final_cta",
         });
@@ -93,9 +98,12 @@ const CTA = () => {
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
               transition={{ duration: 1.5, delay: 1 }}
             >
-              <Button
-                className="relative text-[14px] rounded-[12px] w-full"
-                variant="discord"
+              <Link
+                className={cn(
+                  buttonVariants({ variant: "discord" }),
+                  "relative text-[14px] rounded-[12px] w-full"
+                )}
+                href="https://discord.gg/ZyAaBcvmwh"
                 onClick={() => {
                   trackEvent("discord_clicked", {
                     source: "cta_section",
@@ -104,7 +112,7 @@ const CTA = () => {
                 }}
               >
                 Free discord access
-              </Button>
+              </Link>
             </motion.div>
 
             <BuyButton

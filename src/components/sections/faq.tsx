@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusIcon } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import { trackEvent } from "aurea-tracking-sdk";
+import { cn } from "@/lib/utils";
 
 const faqs = [
   {
@@ -177,20 +178,20 @@ const FAQ = () => {
       if (!prev[i]) {
         const newCount = faqOpenCount + 1;
         setFaqOpenCount(newCount);
-        
+
         // Use new SDK trackEvent if available
-        if (typeof window !== 'undefined' && (window as any).aureaSDK) {
+        if (typeof window !== "undefined" && (window as any).aureaSDK) {
           // Track individual FAQ open
           (window as any).aureaSDK.trackEvent("faq_opened", {
             question: faqs[i].title,
             questionIndex: i,
-            totalFaqsOpened: newCount
+            totalFaqsOpened: newCount,
           });
-          
+
           // If user opened 3+ FAQs, they're really researching!
           if (newCount >= 3) {
             (window as any).aureaSDK.trackEvent("faq_multiple_opened", {
-              count: newCount
+              count: newCount,
             });
           }
         } else {
@@ -209,7 +210,7 @@ const FAQ = () => {
   return (
     <div
       id="faqs"
-      className="min-h-screen h-full flex flex-col gap-8 md:gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto px-8"
+      className=" h-full flex flex-col gap-8 md:gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto px-8"
     >
       <div className="w-full md:w-[16rem] h-full">
         <div className="space-y-4 md:space-y-6 md:sticky md:top-4">
@@ -221,21 +222,21 @@ const FAQ = () => {
             </h2>
           </div>
 
-          <Button
-            className="w-full flex justify-between py-6 md:py-6 px-4! md:pl-6! md:pr-4! rounded-xl bg-white/5 hover:bg-white/10 transition duration-250 tracking-tight text-sm md:text-base"
-            asChild
-            variant="gradient"
+          <Link
+            className={cn(
+              buttonVariants({ variant: "discord" }),
+              "w-full flex justify-between py-6 md:py-6 px-4! md:pl-6! md:pr-4! rounded-xl bg-white/5 hover:bg-white/10 transition duration-250 tracking-tight text-sm md:text-base"
+            )}
+            href="https://discord.gg/ZyAaBcvmwh"
             onClick={() => {
-              trackEvent("contact_clicked", {
-                source: "faq_section",
+              trackEvent("discord_clicked", {
+                source: "cta_section",
+                button: "free_discord_access",
               });
             }}
           >
-            <Link href="mailto:contact@tomstradingroom.com">
-              Get in touch
-              <span className="ml-2">→</span>
-            </Link>
-          </Button>
+            Get in touch <span className="ml-2">→</span>
+          </Link>
         </div>
       </div>
 
