@@ -213,16 +213,6 @@ const Hero = () => {
 
         <nav className="gap-6 text-sm relative z-10 hidden md:flex">
           <Link
-            href="#home"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollTo("#home", { duration: 1.5 });
-            }}
-            className="hover:text-blue-300 transition-colors"
-          >
-            Home
-          </Link>
-          <Link
             href="#testimonials"
             onClick={(e) => {
               e.preventDefault();
