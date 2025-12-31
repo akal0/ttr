@@ -211,7 +211,7 @@ const Hero = () => {
       <div className="flex justify-center md:justify-between items-center py-8 md:max-w-7xl mx-auto w-full">
         <h1 className="text-2xl font-bold tracking-[-0.15rem]"> TTR </h1>
 
-        <nav className="gap-6 text-sm tracking-tight relative z-10 hidden md:flex">
+        <nav className="gap-6 text-sm relative z-10 hidden md:flex">
           <Link
             href="#home"
             onClick={(e) => {
@@ -250,7 +250,7 @@ const Hero = () => {
             }}
             className="hover:text-blue-300 transition-colors"
           >
-            Payouts
+            Darwinex
           </Link>
           <Link
             href="#faqs"
