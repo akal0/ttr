@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusIcon } from "lucide-react";
-import { Button, buttonVariants } from "../ui/button";
-import { trackEvent } from "aurea-tracking-sdk";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "../ui/button";
+import { getAureaSDK } from "../aurea-tracking";
 
 const faqs = [
   {
@@ -167,39 +167,35 @@ const faqs = [
 
 const FAQ = () => {
   const [openIndexes, setOpenIndexes] = useState<boolean[]>([]);
-  const [faqOpenCount, setFaqOpenCount] = useState(0);
+  const faqOpenCountRef = useRef(0);
+  const hasTrackedMultipleRef = useRef(false);
 
   const toggle = (i: number) => {
     setOpenIndexes((prev) => {
       const newArr = [...prev];
       newArr[i] = !newArr[i];
 
-      // Track FAQ interaction
+      // Track FAQ interaction when opening
       if (!prev[i]) {
-        const newCount = faqOpenCount + 1;
-        setFaqOpenCount(newCount);
+        faqOpenCountRef.current += 1;
+        const newCount = faqOpenCountRef.current;
 
-        // Use new SDK trackEvent if available
-        if (typeof window !== "undefined" && (window as any).aureaSDK) {
+        const sdk = getAureaSDK();
+        if (sdk) {
           // Track individual FAQ open
-          (window as any).aureaSDK.trackEvent("faq_opened", {
+          sdk.trackEvent("faq_opened", {
             question: faqs[i].title,
             questionIndex: i,
             totalFaqsOpened: newCount,
           });
 
-          // If user opened 3+ FAQs, they're really researching!
-          if (newCount >= 3) {
-            (window as any).aureaSDK.trackEvent("faq_multiple_opened", {
+          // If user opened 3+ FAQs, they're researching heavily
+          if (newCount >= 3 && !hasTrackedMultipleRef.current) {
+            sdk.trackEvent("faq_multiple_opened", {
               count: newCount,
             });
+            hasTrackedMultipleRef.current = true;
           }
-        } else {
-          // Fallback to old method
-          trackEvent("faq_opened", {
-            question: faqs[i].title,
-            questionIndex: i,
-          });
         }
       }
 
@@ -207,10 +203,18 @@ const FAQ = () => {
     });
   };
 
+  const handleDiscordClick = () => {
+    const sdk = getAureaSDK();
+    sdk?.trackEvent("discord_clicked", {
+      source: "faq_section",
+      button: "get_in_touch",
+    });
+  };
+
   return (
     <div
       id="faqs"
-      className=" h-full flex flex-col gap-8 md:gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto px-8"
+      className="h-full flex flex-col gap-8 md:gap-48 py-12 md:grid md:grid-cols-4 md:py-32 relative max-w-7xl mx-auto px-8"
     >
       <div className="w-full md:w-[16rem] h-full">
         <div className="space-y-4 md:space-y-6 md:sticky md:top-4">
@@ -228,12 +232,7 @@ const FAQ = () => {
               "w-full flex justify-between py-6 md:py-6 px-4! md:pl-6! md:pr-4! rounded-xl bg-white/5 hover:bg-white/10 transition duration-250 tracking-tight text-sm md:text-base"
             )}
             href="https://discord.gg/ZyAaBcvmwh"
-            onClick={() => {
-              trackEvent("discord_clicked", {
-                source: "cta_section",
-                button: "free_discord_access",
-              });
-            }}
+            onClick={handleDiscordClick}
           >
             Get in touch <span className="ml-2">→</span>
           </Link>

@@ -37,7 +37,7 @@ const testimonials = [
 const Testimonials = () => {
   const container = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Track when testimonials section comes into view
   const trackingRef = useSectionTracking({
     sectionName: "Testimonials",

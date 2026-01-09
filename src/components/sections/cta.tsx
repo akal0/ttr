@@ -1,25 +1,25 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
-import { TextEffect } from "../ui/text-effect";
-import { Button, buttonVariants } from "../ui/button";
+import Link from "next/link";
 import { motion, useInView } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { GlowEffect } from "../ui/glow-effect";
-import { useRef, useEffect } from "react";
+import { TextEffect } from "../ui/text-effect";
+import { buttonVariants } from "../ui/button";
 import { BuyButton } from "../buy-button";
-import { trackEvent } from "aurea-tracking-sdk";
+import { getAureaSDK } from "../aurea-tracking";
 import {
   useSectionTracking,
   useCTAHoverTracking,
 } from "@/lib/hooks/use-section-tracking";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 const CTA = () => {
   const buttonRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(buttonRef, { once: true, amount: 0.5 });
 
-  // Track CTA section view with new SDK
+  // Track CTA section view
   const trackingRef = useSectionTracking({
     sectionName: "Final CTA",
     eventName: "pricing_section_viewed",
@@ -29,24 +29,16 @@ const CTA = () => {
   // Track CTA button hover
   useCTAHoverTracking(buttonRef, "Join TTR - Final CTA");
 
-  // Track when CTA section comes into view (legacy)
-  useEffect(() => {
-    if (isInView) {
-      // Use new SDK if available
-      if (typeof window !== "undefined" && (window as any).aureaSDK) {
-        (window as any).aureaSDK.trackEvent("cta_section_viewed", {
-          section: "final_cta",
-        });
-      } else {
-        trackEvent("cta_section_viewed", {
-          section: "final_cta",
-        });
-      }
-    }
-  }, [isInView]);
+  const handleDiscordClick = () => {
+    const sdk = getAureaSDK();
+    sdk?.trackEvent("discord_clicked", {
+      source: "cta_section",
+      button: "free_discord_access",
+    });
+  };
 
   return (
-    <div className="py-16 pb-0 px-4">
+    <div ref={trackingRef} className="py-16 pb-0 px-4">
       <div className="flex flex-col w-full max-w-7xl mx-auto h-96 relative rounded-3xl overflow-hidden ring ring-white/2 shadow-2xl md:p-25 py-25 items-center justify-center gap-8">
         <GlowEffect
           colors={["#1C6DF6", "#1557CC", "#2B7FFF", "#4A8FFF"]}
@@ -104,12 +96,7 @@ const CTA = () => {
                   "relative text-[14px] rounded-[12px] w-full"
                 )}
                 href="https://discord.gg/ZyAaBcvmwh"
-                onClick={() => {
-                  trackEvent("discord_clicked", {
-                    source: "cta_section",
-                    button: "free_discord_access",
-                  });
-                }}
+                onClick={handleDiscordClick}
               >
                 Free discord access
               </Link>

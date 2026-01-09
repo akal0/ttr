@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getAureaSDK } from "@/components/aurea-tracking";
 
 interface SectionTrackingOptions {
   sectionName: string;
@@ -28,18 +29,19 @@ export function useSectionTracking({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
+        for (const entry of entries) {
           if (entry.isIntersecting) {
             if (trackOnce && hasTracked.current) return;
 
-            // Track section view using new SDK
-            if (typeof window !== "undefined" && (window as any).aureaSDK) {
+            const sdk = getAureaSDK();
+            if (sdk) {
               const finalEventName = eventName || `${sectionName.toLowerCase().replace(/\s+/g, "_")}_viewed`;
               
-              (window as any).aureaSDK.trackEvent(finalEventName, {
+              sdk.trackEvent(finalEventName, {
                 sectionName,
                 visibilityRatio: entry.intersectionRatio,
-                timestamp: Date.now(),
+                viewportHeight: window.innerHeight,
+                scrollY: window.scrollY,
               });
             }
 
@@ -49,7 +51,7 @@ export function useSectionTracking({
               observer.disconnect();
             }
           }
-        });
+        }
       },
       { threshold }
     );
@@ -64,10 +66,11 @@ export function useSectionTracking({
 
 /**
  * Hook to track scroll depth on a page
+ * Tracks milestones at 25%, 50%, 75%, 90%, and 100%
  */
 export function useScrollDepthTracking() {
   useEffect(() => {
-    const milestones = {
+    const milestones: Record<number, boolean> = {
       25: false,
       50: false,
       75: false,
@@ -76,70 +79,90 @@ export function useScrollDepthTracking() {
     };
 
     let maxScroll = 0;
+    let ticking = false;
 
     const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollTop = window.scrollY;
+      if (ticking) return;
+      
+      ticking = true;
+      requestAnimationFrame(() => {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        const scrollTop = window.scrollY;
 
-      const scrollPercent = ((scrollTop + windowHeight) / documentHeight) * 100;
+        const scrollPercent = Math.min(
+          100,
+          ((scrollTop + windowHeight) / documentHeight) * 100
+        );
 
-      if (scrollPercent > maxScroll) {
-        maxScroll = scrollPercent;
-      }
+        if (scrollPercent > maxScroll) {
+          maxScroll = scrollPercent;
+        }
 
-      // Track milestones
-      Object.keys(milestones).forEach((key) => {
-        const milestone = Number(key);
-        if (maxScroll >= milestone && !milestones[milestone as keyof typeof milestones]) {
-          milestones[milestone as keyof typeof milestones] = true;
+        // Track milestones
+        const sdk = getAureaSDK();
+        if (sdk) {
+          for (const key of Object.keys(milestones)) {
+            const milestone = Number(key);
+            if (maxScroll >= milestone && !milestones[milestone]) {
+              milestones[milestone] = true;
 
-          if (typeof window !== "undefined" && (window as any).aureaSDK) {
-            (window as any).aureaSDK.trackEvent(`scroll_depth_${milestone}`, {
-              scrollPercent: maxScroll,
-              scrollTop,
-              documentHeight,
-            });
+              sdk.trackEvent(`scroll_depth_${milestone}`, {
+                scrollPercent: Math.round(maxScroll),
+                scrollTop: Math.round(scrollTop),
+                documentHeight,
+                windowHeight,
+              });
+            }
           }
         }
+        
+        ticking = false;
       });
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    
+    // Check initial scroll position
+    handleScroll();
+    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 }
 
 /**
  * Hook to track time spent on page
+ * Tracks milestones at 30s, 60s, 120s, 180s, and 300s
  */
 export function useTimeOnPageTracking() {
   useEffect(() => {
     const startTime = Date.now();
-    const milestones = {
-      30: false, // 30 seconds
-      60: false, // 1 minute
-      120: false, // 2 minutes
-      180: false, // 3 minutes
-      300: false, // 5 minutes
+    const milestones: Record<number, boolean> = {
+      30: false,
+      60: false,
+      120: false,
+      180: false,
+      300: false,
     };
 
     const interval = setInterval(() => {
       const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
+      const sdk = getAureaSDK();
 
-      Object.keys(milestones).forEach((key) => {
-        const milestone = Number(key);
-        if (timeOnPage >= milestone && !milestones[milestone as keyof typeof milestones]) {
-          milestones[milestone as keyof typeof milestones] = true;
+      if (sdk) {
+        for (const key of Object.keys(milestones)) {
+          const milestone = Number(key);
+          if (timeOnPage >= milestone && !milestones[milestone]) {
+            milestones[milestone] = true;
 
-          if (typeof window !== "undefined" && (window as any).aureaSDK) {
-            (window as any).aureaSDK.trackEvent(`time_on_page_${milestone}s`, {
+            sdk.trackEvent(`time_on_page_${milestone}s`, {
               timeOnPage,
-              timestamp: Date.now(),
+              startTime,
+              currentTime: Date.now(),
             });
           }
         }
-      });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -148,25 +171,31 @@ export function useTimeOnPageTracking() {
 
 /**
  * Hook to track CTA button hovers
+ * Tracks initial hover (after 500ms) and long hover (2+ seconds)
  */
-export function useCTAHoverTracking(elementRef: React.RefObject<HTMLElement | null>, ctaName: string) {
+export function useCTAHoverTracking(
+  elementRef: React.RefObject<HTMLElement | null>,
+  ctaName: string
+) {
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
 
     let hoverStartTime = 0;
     let hasTrackedHover = false;
+    let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const handleMouseEnter = () => {
       hoverStartTime = Date.now();
 
       // Track hover after 500ms (shows intent)
-      setTimeout(() => {
+      hoverTimeout = setTimeout(() => {
         if (hoverStartTime > 0 && !hasTrackedHover) {
-          if (typeof window !== "undefined" && (window as any).aureaSDK) {
-            (window as any).aureaSDK.trackEvent("cta_hovered", {
+          const sdk = getAureaSDK();
+          if (sdk) {
+            sdk.trackEvent("cta_hovered", {
               ctaName,
-              timestamp: Date.now(),
+              hoverDuration: 500,
             });
           }
           hasTrackedHover = true;
@@ -175,16 +204,23 @@ export function useCTAHoverTracking(elementRef: React.RefObject<HTMLElement | nu
     };
 
     const handleMouseLeave = () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+      }
+      
       if (hoverStartTime > 0) {
         const hoverDuration = Date.now() - hoverStartTime;
         
         // If user hovered for 2+ seconds, track as high intent
-        if (hoverDuration >= 2000 && typeof window !== "undefined" && (window as any).aureaSDK) {
-          (window as any).aureaSDK.trackEvent("cta_hovered_long", {
-            ctaName,
-            hoverDuration,
-            timestamp: Date.now(),
-          });
+        if (hoverDuration >= 2000) {
+          const sdk = getAureaSDK();
+          if (sdk) {
+            sdk.trackEvent("cta_hovered_long", {
+              ctaName,
+              hoverDuration,
+            });
+          }
         }
         
         hoverStartTime = 0;
@@ -195,6 +231,9 @@ export function useCTAHoverTracking(elementRef: React.RefObject<HTMLElement | nu
     element.addEventListener("mouseleave", handleMouseLeave);
 
     return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
       element.removeEventListener("mouseenter", handleMouseEnter);
       element.removeEventListener("mouseleave", handleMouseLeave);
     };
@@ -204,12 +243,14 @@ export function useCTAHoverTracking(elementRef: React.RefObject<HTMLElement | nu
 /**
  * Hook to track user engagement level
  * Combines multiple signals to determine engagement
+ * Fires high_engagement_detected when engagement score reaches 50
  */
 export function useEngagementTracking() {
   useEffect(() => {
     let interactionCount = 0;
     let lastInteractionTime = Date.now();
     let engagementScore = 0;
+    let hasTrackedHighEngagement = false;
 
     const trackInteraction = (type: string) => {
       interactionCount++;
@@ -223,34 +264,37 @@ export function useEngagementTracking() {
         engagementScore += 5;
       }
 
-      // Track high engagement
-      if (engagementScore >= 50 && typeof window !== "undefined" && (window as any).aureaSDK) {
-        (window as any).aureaSDK.trackEvent("high_engagement_detected", {
-          interactionCount,
-          engagementScore,
-          interactionType: type,
-        });
+      // Track high engagement only once
+      if (engagementScore >= 50 && !hasTrackedHighEngagement) {
+        const sdk = getAureaSDK();
+        if (sdk) {
+          sdk.trackEvent("high_engagement_detected", {
+            interactionCount,
+            engagementScore,
+            interactionType: type,
+            timeToHighEngagement: Date.now() - (lastInteractionTime - timeSinceLastInteraction),
+          });
+          hasTrackedHighEngagement = true;
+        }
       }
     };
 
-    const handleMouseMove = () => trackInteraction("mouse_move");
-    const handleScroll = () => trackInteraction("scroll");
-    const handleClick = () => trackInteraction("click");
-    const handleKeyPress = () => trackInteraction("key_press");
-
     // Throttle event handlers
-    let mouseTimeout: NodeJS.Timeout;
-    let scrollTimeout: NodeJS.Timeout;
+    let mouseTimeout: ReturnType<typeof setTimeout> | null = null;
+    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const throttledMouseMove = () => {
-      clearTimeout(mouseTimeout);
-      mouseTimeout = setTimeout(handleMouseMove, 2000);
+      if (mouseTimeout) clearTimeout(mouseTimeout);
+      mouseTimeout = setTimeout(() => trackInteraction("mouse_move"), 2000);
     };
 
     const throttledScroll = () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, 1000);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => trackInteraction("scroll"), 1000);
     };
+
+    const handleClick = () => trackInteraction("click");
+    const handleKeyPress = () => trackInteraction("key_press");
 
     window.addEventListener("mousemove", throttledMouseMove, { passive: true });
     window.addEventListener("scroll", throttledScroll, { passive: true });
@@ -258,10 +302,98 @@ export function useEngagementTracking() {
     window.addEventListener("keypress", handleKeyPress);
 
     return () => {
+      if (mouseTimeout) clearTimeout(mouseTimeout);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
       window.removeEventListener("mousemove", throttledMouseMove);
       window.removeEventListener("scroll", throttledScroll);
       window.removeEventListener("click", handleClick);
       window.removeEventListener("keypress", handleKeyPress);
     };
   }, []);
+}
+
+/**
+ * Hook to track video playback milestones
+ */
+export function useVideoTracking(videoRef: React.RefObject<HTMLVideoElement | null>) {
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const milestones: Record<number, boolean> = {
+      25: false,
+      50: false,
+      75: false,
+      100: false,
+    };
+    let hasStarted = false;
+    let playCount = 0;
+
+    const handlePlay = () => {
+      const sdk = getAureaSDK();
+      if (!sdk) return;
+
+      if (!hasStarted) {
+        hasStarted = true;
+        sdk.trackEvent("video_started", {
+          videoSrc: video.src,
+          videoDuration: video.duration,
+        });
+      } else {
+        playCount++;
+        if (playCount > 1) {
+          sdk.trackEvent("video_replayed", {
+            videoSrc: video.src,
+            playCount,
+          });
+        }
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      if (!video.duration) return;
+      
+      const percent = (video.currentTime / video.duration) * 100;
+      const sdk = getAureaSDK();
+      if (!sdk) return;
+
+      for (const key of Object.keys(milestones)) {
+        const milestone = Number(key);
+        if (percent >= milestone && !milestones[milestone]) {
+          milestones[milestone] = true;
+
+          if (milestone === 100) {
+            sdk.trackEvent("video_completed", {
+              videoSrc: video.src,
+              videoDuration: video.duration,
+              watchTime: video.currentTime,
+            });
+          } else {
+            sdk.trackEvent(`video_${milestone}_percent`, {
+              videoSrc: video.src,
+              currentTime: video.currentTime,
+              totalDuration: video.duration,
+            });
+          }
+        }
+      }
+    };
+
+    const handleEnded = () => {
+      // Reset milestones for replay tracking
+      for (const key of Object.keys(milestones)) {
+        milestones[Number(key)] = false;
+      }
+    };
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [videoRef]);
 }
