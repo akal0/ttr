@@ -13,6 +13,7 @@ import { getAureaSDK } from "../aurea-tracking";
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const hasTrackedView = useRef(false);
+  const { scrollTo } = useLenis();
 
   // Track hero section view on mount (it's always visible on page load)
   useEffect(() => {

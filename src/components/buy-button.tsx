@@ -53,7 +53,6 @@ export function BuyButton({
     // Get current funnel stage for context
     const currentStage = sdk?.getCurrentStage() || "unknown";
     const stageHistory = sdk?.getStageHistory() || [];
-    const timeInCurrentStage = sdk?.getTimeInCurrentStage(currentStage) || 0;
 
     if (sdk) {
       try {
@@ -71,7 +70,6 @@ export function BuyButton({
           sessionId,
           anonymousId,
           currentStage,
-          timeInCurrentStage,
           stageCount: stageHistory.length,
         });
         

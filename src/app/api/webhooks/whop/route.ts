@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     return new Response("Invalid signature", { status: 400 });
   }
 
-  const type = webhookData.type;
+  const type = String(webhookData.type);
   const data = webhookData.data as unknown as Record<string, unknown>;
 
   console.log(`Processing webhook type: ${type}`);
