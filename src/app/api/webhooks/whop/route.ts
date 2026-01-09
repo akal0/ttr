@@ -126,9 +126,9 @@ export async function POST(request: NextRequest) {
   const raw = await request.text();
   const headers = Object.fromEntries(request.headers);
 
-  let webhookData: { type: string; data: Record<string, unknown> };
+  let webhookData: ReturnType<typeof whopsdk.webhooks.unwrap>;
   try {
-    webhookData = whopsdk.webhooks.unwrap(raw, { headers }) as { type: string; data: Record<string, unknown> };
+    webhookData = whopsdk.webhooks.unwrap(raw, { headers });
     console.log("Webhook signature verified");
   } catch (err) {
     console.error("Invalid Whop webhook signature", err);
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
   }
 
   const type = webhookData.type;
-  const data = webhookData.data as Record<string, unknown>;
+  const data = webhookData.data as unknown as Record<string, unknown>;
 
   console.log(`Processing webhook type: ${type}`);
 
